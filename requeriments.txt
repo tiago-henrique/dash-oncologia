@@ -2,8 +2,6 @@ streamlit
 pandas
 numpy
 plotly
-altair
 openpyxl
-reportlab
-matplotlib==3.10.0
-matplotlib-inline==0.1.7
+matplotlib
+seaborn

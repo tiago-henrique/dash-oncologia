@@ -8,7 +8,7 @@ st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
 
 try:
-    database = pd.read_excel(st.secrets['DATABASE'])
+    database = pd.read_csv(st.secrets['DATABASE'])
 except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()

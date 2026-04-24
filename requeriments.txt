@@ -3,6 +3,7 @@ pandas
 numpy
 plotly
 altair
-matplotlib
 openpyxl
 reportlab
+matplotlib==3.10.0
+matplotlib-inline==0.1.7

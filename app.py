@@ -99,13 +99,18 @@ st.write(dados_mt)
 #internação
 st.header("Dados de Internação")
 
-col5, col6 = st.columns(2, border=True)
+#col5, col6 = st.columns(2, border=True)
 internacao = database[database['redcap_repeat_instrument'] == 'internao']
-conta_internacao = internacao['record_id'].value_counts()
+conta_internacao = (
+    internacao['record_id']
+    .value_counts()
+    .rename_axis('Id. Paciente')
+    .reset_index(name='Total')
+)
 
-with col5:
-    st.header("Frequência de Internações")
-    st.write(conta_internacao)
+#with col5:
+st.header("Frequência de Internações")
+st.write(conta_internacao)
 
 internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
 internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')
@@ -122,14 +127,20 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-#st.header("Distribuição por idade")
-#st.write(idade_counts)
-###################################
-#st.header("Distribuição por Faixa Etária")
+df = dias_counts.reset_index()
+df.columns = ['Dias', 'Quantidade'] 
+fig, ax = plt.subplots(figsize=(8,3))
+sns.barplot(data=df, x='Dias', y='Quantidade', ax=ax, width=0.8, orient='x')
+ax.bar_label(ax.containers[0], fontsize=5);
+ax.set_title("Tempo de Internacão", fontsize=5)
+ax.set_xlabel("Dias", fontsize=5)
+ax.set_ylabel("Quantidade", fontsize=5)
+st.pyplot(fig)
+
+#st.write(df)
 
 df = idade_counts.reset_index()
 df.columns = ['idade', 'n']
-
 bins = [15, 20, 30, 40, 50, 60, 70, 80, 100]
 labels = ['16-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80+']
 
@@ -145,12 +156,12 @@ ax.set_xlabel("Faixa Etária")
 ax.set_ylabel("Número de Pacientes")
 st.pyplot(fig)
 
-st.header("Tempo de internação")
-st.write(dias_internacao)
+#st.header("Tempo de internação")
+#st.write(dias_internacao)
 
-with col6:
-    st.header("Dias de Internação")
-    st.write(dias_internacao)
+#with col6:
+#    st.header("Dias de Internação")
+#    st.write(dias_internacao)
 
 
 col9, col10 = st.columns(2, border=True)

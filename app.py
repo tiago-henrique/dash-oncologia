@@ -11,7 +11,7 @@ st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
 
 file_path = st.secrets["CAMINHO"]
-response = requests.head(url)
+response = requests.head(file_path)
 last_modified = response.headers.get("Last-Modified")
 st.write("Última modificação:", last_modified)
 

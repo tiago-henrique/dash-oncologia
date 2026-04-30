@@ -3,15 +3,27 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
+import os
+import datetime
 
 st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])
+    filename = st.secrets['CAMINHO']
+
 except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()
+
+#database = pd.read_csv("dados/indicadores.csv")
+stats = os.stat(filename)
+creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
+formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
+   
+st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")
+
 
 database = database.rename(columns={
     'sitio_primario___1':'Mama', 'sitio_primario___2':'Pulmão', 'sitio_primario___3':'C&P', 'sitio_primario___4':'SNC', 'sitio_primario___5':'Ovário', 'sitio_primario___6':'Próstata', 'sitio_primario___7':'Sarcoma', 'sitio_primario___8':'Esôfago', 'sitio_primario___9':'Via Biliar', 'sitio_primario___10':'Pênis', 'sitio_primario___11':'Gástrico', 'sitio_primario___12':'Pâncreas', 'sitio_primario___13':'Colorretal', 'sitio_primario___14':'Colo Útero', 'sitio_primario___15':'Endométrio', 'sitio_primario___16':'Fígado', 'sitio_primario___17':'Pele', 'sitio_primario___18':'Bexiga', 'sitio_primario___19':'Rim', 'sitio_primario___20':'Outro', 'sitio_primario___21':'Sarcomas', 'outro_sitio_primario':'Outro sítio primário', 'estagio_clinico':'Estágio clínico', 'metastase___1':'M Fígado', 'metastase___2':'M Pulmão', 'metastase___3':'M SNC', 'metastase___4':'M Peritônio', 'metastase___5':'M Osso', 'metastase___6':'M Linfonodos', 'metastase___7':'M Adrenal', 'metastase___8':'M Outro', 'metastase___9':'Não se aplica','metastase___10':'M Pleura', 'metastase___11':'Progressão locoregional - em cenário paliativo'})
@@ -33,19 +45,19 @@ dados_sp = dados_sp.sort_values(by='Total', ascending=False)
 
 # st.subheader('📋 Dados')
 
-col1, col2 = st.columns(2, border=True)
-with col1:
-    st.dataframe(dados_sp)
+#col1, col2 = st.columns(2, border=True)
+#with col1:
+st.dataframe(dados_sp)
 
-fig = px.bar(
-    dados_sp,
-    x='Tipo',
-    y='Total',
-    title='Casos por Tipo de Câncer'
-)
+#fig = px.bar(
+#    dados_sp,
+#    x='Tipo',
+#    y='Total',
+#    title='Casos por Tipo de Câncer'
+#)
 
-with col2:
-    st.plotly_chart(fig, use_container_width=True)
+#with col2:
+#    st.plotly_chart(fig, use_container_width=True)
 
 outro_sp = database['Outro sítio primário'].value_counts()
 st.write(outro_sp)
@@ -86,15 +98,16 @@ internacao['data_da_alta'] = pd.to_datetime(internacao['data_da_alta'], errors='
 idade = internacao['data_da_interna_o'] - internacao['dob']
 idade_anos = idade.dt.days // 365
 idade_counts = idade_anos.value_counts().sort_index()
+
 #Calcular tempo de internação
 tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
 dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-
+st.header("Distrubuição por idade")
 st.write(idade_counts)
-
+st.header("Tempo de internaçaõ")
 st.write(dias_internacao)
 
 with col3:
@@ -123,9 +136,9 @@ st.write(eci)
 internacao['causa_internacao'] = database['causa_internacao'].map(causa_internacao_map)
 causa_internacao = internacao['causa_internacao'].value_counts()
 
-with col4:
-    st.bar_chart(causa_internacao)
-
+#with col4:
+#    st.bar_chart(causa_internacao)
+#
 infeccao_map = {
     1 : "Infecção urinária",
     2 : "Pneumonia",
@@ -180,3 +193,4 @@ internacao['pd'] = internacao['pd'].map(pd_map)
 progressao_doenca = internacao['pd'].value_counts()
 st.write(progressao_doenca)
 
+st.write("Criado por Tiago Henrique")

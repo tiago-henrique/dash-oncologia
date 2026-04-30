@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import os
 import datetime
-from datetime import datetime
 import requests
 
 st.set_page_config(layout='wide')
@@ -14,9 +13,8 @@ st.title("Dados HBOnco")
 file_path = st.secrets["CAMINHO"]
 response = requests.head(file_path)
 last_modified = response.headers.get("Last-Modified")
-data_obj = datetime.strptime(last_modified, '%a, %d, %b, %Y, %H:, %M:, %S GMT')
 
-st.success(f"Os dados do dashboard foram atualizados em: {data_obj('%d-%m-%Y - %H:%M')}")
+st.success(f"Os dados do dashboard foram atualizados em: {last_modified}")
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])

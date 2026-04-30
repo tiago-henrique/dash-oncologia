@@ -11,16 +11,16 @@ st.title("Dados HBOnco")
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])
-    fileName = st.secrets['CAMINHO']
+    #fileName = st.secrets['CAMINHO']
 except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()
 
-stats = os.stat(fileName)
-creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
-formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
-st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")
-st.success(f"Os dados do dashboard foram atualuzados em: {formatted_data}")
+#stats = os.stat(fileName)
+#creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
+#formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
+#st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")
+#st.success(f"Os dados do dashboard foram atualuzados em: {formatted_data}")
 
 database = database.rename(columns={
     'sitio_primario___1':'Mama', 'sitio_primario___2':'Pulmão', 'sitio_primario___3':'C&P', 'sitio_primario___4':'SNC', 'sitio_primario___5':'Ovário', 'sitio_primario___6':'Próstata', 'sitio_primario___7':'Sarcoma', 'sitio_primario___8':'Esôfago', 'sitio_primario___9':'Via Biliar', 'sitio_primario___10':'Pênis', 'sitio_primario___11':'Gástrico', 'sitio_primario___12':'Pâncreas', 'sitio_primario___13':'Colorretal', 'sitio_primario___14':'Colo Útero', 'sitio_primario___15':'Endométrio', 'sitio_primario___16':'Fígado', 'sitio_primario___17':'Pele', 'sitio_primario___18':'Bexiga', 'sitio_primario___19':'Rim', 'sitio_primario___20':'Outro', 'sitio_primario___21':'Sarcomas', 'outro_sitio_primario':'Outro sítio primário', 'estagio_clinico':'Estágio clínico', 'metastase___1':'M Fígado', 'metastase___2':'M Pulmão', 'metastase___3':'M SNC', 'metastase___4':'M Peritônio', 'metastase___5':'M Osso', 'metastase___6':'M Linfonodos', 'metastase___7':'M Adrenal', 'metastase___8':'M Outro', 'metastase___9':'Não se aplica','metastase___10':'M Pleura', 'metastase___11':'Progressão locoregional - em cenário paliativo'})

@@ -13,7 +13,9 @@ st.title("Dados HBOnco")
 file_path = st.secrets["CAMINHO"]
 response = requests.head(file_path)
 last_modified = response.headers.get("Last-Modified")
-st.success(f"Os dados do dashboard foram atualizados em: {last_modified}")
+data_obj = datetime.strptime(last_modified, '%a, %d, %b, %Y, %H:, %M:, %S GMT')
+
+st.success(f"Os dados do dashboard foram atualizados em: {data_obj('%d-%m-%Y - %H:%M}")
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])

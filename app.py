@@ -8,6 +8,7 @@ import datetime
 
 st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
+st.write("Diretório Atual:", os.getcwd())
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])

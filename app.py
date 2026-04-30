@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import os
 import datetime
+import requests
 
 st.set_page_config(layout='wide')
 st.title("Dados HBOnco")

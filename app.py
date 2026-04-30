@@ -6,6 +6,7 @@ import plotly.express as px
 import os
 import datetime
 import requests
+import seaborn as sns
 
 st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
@@ -44,27 +45,28 @@ colunas_sp = [
 
 dados_sp = admissao[colunas_sp].sum().reset_index()
 dados_sp.columns = ['Tipo', 'Total']
-
 dados_sp = dados_sp.sort_values(by='Total', ascending=False)
-
-# st.subheader('📋 Dados')
-
-#col1, col2 = st.columns(2, border=True)
-#with col1:
-st.dataframe(dados_sp)
-
-#fig = px.bar(
-#    dados_sp,
-#    x='Tipo',
-#    y='Total',
-#    title='Casos por Tipo de Câncer'
-#)
-
-#with col2:
-#    st.plotly_chart(fig, use_container_width=True)
+fig = px.bar(
+    dados_sp,
+    x='Tipo',
+    y='Total',
+    title='Casos por Tipo de Câncer'
+)
+ 
+#st.write(dados_sp)
+col1, col2 = st.columns(2, border=True)
+with col1:
+    st.plotly_chart(fig, use_container_width=True)
 
 outro_sp = database['Outro sítio primário'].value_counts()
-st.write(outro_sp)
+fig_outro_sp = plt.figure(figsize=(10,5))
+sns.barplot(x=outro_sp.index, y=outro_sp.values, alpha=1.0)
+plt.title("Outros Sítios Primários")
+plt.ylabel('Total', fontsize=12)
+plt.xlabel('Outros Sítios', fontsize=12)
+
+with col2:
+    st.pyplot(fig_outro_sp)
 
 estagio_map = {
     1 : 'Estágio I',
@@ -76,7 +78,15 @@ estagio_map = {
 
 database['Estágio clínico'] = database['Estágio clínico'].map(estagio_map)
 estagio_clinico = database['Estágio clínico'].value_counts()
-st.write(estagio_clinico)
+fig_estagio = plt.figure(figsize=(10,5))
+sns.barplot(x=estagio_clinico.index, y=estagio_clinico.values, alpha=1.0)
+plt.title("Estágio Clínico")
+plt.ylabel('Total', fontsize=12)
+plt.xlabel('Estágio', fontsize=12)
+
+col3, col4 = st.columns(2, border=True)
+with col3:
+    st.pyplot(fig_estagio)
 
 colunas_metastases = ['M Fígado', 'M Pulmão', 'M SNC', 'M Peritônio', 'M Osso', 'M Linfonodos', 'M Adrenal', 'M Outro', 'Não se aplica', 'M Pleura', 'Progressão locoregional - em cenário paliativo']
 
@@ -87,12 +97,15 @@ st.write(dados_mt)
 
 ###########################
 #internação
-col3, col4 = st.columns(2, border=True)
-
 st.header("Dados de Internação")
-st.write("#Distribuição de idade")
+
+col5, col6 = st.columns(2, border=True)
 internacao = database[database['redcap_repeat_instrument'] == 'internao']
 conta_internacao = internacao['record_id'].value_counts()
+
+with col5:
+    st.header("Frequência de Internações")
+    st.write(conta_internacao)
 
 internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
 internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')
@@ -109,14 +122,38 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-st.header("Distrubuição por idade")
-st.write(idade_counts)
-st.header("Tempo de internaçaõ")
+#st.header("Distribuição por idade")
+#st.write(idade_counts)
+###################################
+#st.header("Distribuição por Faixa Etária")
+
+df = idade_counts.reset_index()
+df.columns = ['idade', 'n']
+
+bins = [15, 20, 30, 40, 50, 60, 70, 80, 100]
+labels = ['16-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80+']
+
+df['faixa_etaria'] = pd.cut(df['idade'], bins=bins, labels=labels, right=False)
+
+contagem = df.groupby('faixa_etaria')['n'].sum()
+
+fig, ax = plt.subplots(figsize=(10,2))
+sns.barplot(x=contagem.index, y=contagem.values, ax=ax)
+
+ax.set_title("Distribuição por Faixa Etária")
+ax.set_xlabel("Faixa Etária")
+ax.set_ylabel("Número de Pacientes")
+st.pyplot(fig)
+
+st.header("Tempo de internação")
 st.write(dias_internacao)
 
-with col3:
-    st.write(conta_internacao)
+with col6:
+    st.header("Dias de Internação")
+    st.write(dias_internacao)
 
+
+col9, col10 = st.columns(2, border=True)
 
 causa_internacao_map = {
     29 : "Progressão de doença",
@@ -136,13 +173,17 @@ causa_internacao_map = {
 
 internacao['estagio_clinico_internacao'] = internacao['estagio_clinico_internacao'].map(estagio_map)
 eci = internacao['estagio_clinico_internacao'].value_counts()
-st.write(eci)
+#st.write(eci)
+with col9:
+    st.header("Estágio Clínico")
+    st.bar_chart(eci)
+
 internacao['causa_internacao'] = database['causa_internacao'].map(causa_internacao_map)
 causa_internacao = internacao['causa_internacao'].value_counts()
+with col10:
+    st.header("Causa de Internação")
+    st.bar_chart(causa_internacao)
 
-#with col4:
-#    st.bar_chart(causa_internacao)
-#
 infeccao_map = {
     1 : "Infecção urinária",
     2 : "Pneumonia",
@@ -154,9 +195,14 @@ infeccao_map = {
     8 : "Diarréia/Colite",
     9 : "Colangite"
 }
+
+col11, col12 = st.columns(2, border=True)
+
 internacao['tipo_infeccao'] = internacao['tipo_infeccao'].map(infeccao_map)
 tipo_infeccao = internacao['tipo_infeccao'].value_counts()
-st.write(tipo_infeccao)
+with col11:
+    st.header("Tipo de infecção")
+    st.bar_chart(tipo_infeccao)
 
 manejo_map = {
     1 : "Dor",
@@ -166,8 +212,11 @@ manejo_map = {
 }
 internacao['manejo_de_sintomas'] = internacao['manejo_de_sintomas'].map(manejo_map)
 manejo_sintomas = internacao['manejo_de_sintomas'].value_counts()
-st.write(manejo_sintomas)
+with col12:
+    st.header("Manejo de Sintomas")
+    st.bar_chart(manejo_sintomas)
 
+col13, col14 = st.columns(2, border=True)    
 dispositivos_map = {
     1 : "Gastrostomia",
     2 : "SNE",
@@ -177,7 +226,10 @@ dispositivos_map = {
 }
 internacao['dispositivos'] = internacao['dispositivos'].map(dispositivos_map)
 dispositivos = internacao['dispositivos'].value_counts()
-st.write(dispositivos)
+#st.write(dispositivos)
+with col13:
+    st.header('Dispositivos')
+    st.bar_chart(dispositivos)
 
 pd_map = {
     1 : "Hipercalcemia da Malignidade",
@@ -195,6 +247,8 @@ pd_map = {
 
 internacao['pd'] = internacao['pd'].map(pd_map)
 progressao_doenca = internacao['pd'].value_counts()
-st.write(progressao_doenca)
-
+#st.write(progressao_doenca)
+with col14:
+    st.header("Progressão da Doença")
+    st.bar_chart(progressao_doenca)
 st.write("Criado por Tiago Henrique")

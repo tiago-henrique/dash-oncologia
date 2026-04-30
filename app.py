@@ -11,13 +11,13 @@ st.title("Dados HBOnco")
 
 try:
     database = pd.read_csv(st.secrets['DATABASE'])
-    filename = st.secrets['CAMINHO']
-
+    fileName = st.secrets['CAMINHO']
+    st.write(fileName)
 except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()
 
-stats = os.stat(filename)
+stats = os.stat(fileName)
 creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
 formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
 st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")

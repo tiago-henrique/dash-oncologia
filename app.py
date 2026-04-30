@@ -12,7 +12,6 @@ st.title("Dados HBOnco")
 try:
     database = pd.read_csv(st.secrets['DATABASE'])
     fileName = st.secrets['CAMINHO']
-    st.write(fileName)
 except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()

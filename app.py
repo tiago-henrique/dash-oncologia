@@ -8,12 +8,12 @@ import datetime
 
 st.set_page_config(layout='wide')
 st.title("Dados HBOnco")
-file_path = st.secrets["CAMINHO"]
 
-st.write("Raw:", file_path)
-st.write("Repr:", repr(file_path))
-st.write("Existe?", os.path.exists(file_path))
-st.write("CWD:", os.getcwd())
+file_path = st.secrets["CAMINHO"]
+response = requests.head(url)
+last_modified = response.headers.get("Last-Modified")
+st.write("Última modificação:", last_modified)
+
 try:
     database = pd.read_csv(st.secrets['DATABASE'])
     #fileName = st.secrets['CAMINHO']

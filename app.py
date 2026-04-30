@@ -17,12 +17,10 @@ except Exception as e:
     st.error(f"Erro ao carregar o banco de dados: {e}")
     st.stop()
 
-#database = pd.read_csv("dados/indicadores.csv")
-#stats = os.stat(filename)
-#creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
-#formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
-   
-#st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")
+stats = os.stat(filename)
+creation_time = datetime.datetime.fromtimestamp(stats.st_ctime)
+formatted_date = creation_time.strftime("%d/%m/%Y %H:%M:%S")
+st.info(f"O dados do dasbhboard foram atualizados em: {formatted_date}")
 
 
 database = database.rename(columns={

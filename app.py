@@ -92,12 +92,15 @@ with col3:
     st.plotly_chart(fig_estagio)
 
 
-colunas_metastases = ['M Fígado', 'M Pulmão', 'M SNC', 'M Peritônio', 'M Osso', 'M Linfonodos', 'M Adrenal', 'M Outro', 'Não se aplica', 'M Pleura', 'Progressão locoregional - em cenário paliativo']
+colunas_metastases = ['M Fígado', 'M Pulmão', 'M SNC', 'M Peritônio', 'M Osso', 'M Linfonodos', 'M Adrenal', 'M Outro', 'Não se aplica', 'M Pleura']
 
 dados_mt = admissao[colunas_metastases].sum().reset_index()
 dados_mt.columns = ['Tipo', 'Total']
 dados_mt = dados_mt.sort_values(by='Total', ascending=False)
-st.write(dados_mt)
+fig_metastase = px.bar(dados_mt, x="Tipo", y="Total", text="Total", title="Metástase por Subsítios")
+fig_metastase.update_traces(textposition='outside')
+with col4:
+    st.plotly_chart(fig_metastase, use_container_width=True)
 
 ###########################
 #internação

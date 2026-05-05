@@ -16,10 +16,7 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-if os.path.exists("pages/internacao.py"):
-    st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
-else:
-    st.error("Página não encontrada")
+
 st.markdown("""
 <style>
     /* Estilo para links personalizados */
@@ -43,6 +40,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.sidebar.title("Menu")
 st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
+if os.path.exists("pages/internacao.py"):
+    st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
+else:
+    st.error("Página não encontrada")
 
 st.image("logo-hbonco.webp")
 st.title(":blue[Dashboard HB Onco]")

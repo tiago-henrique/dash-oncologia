@@ -11,9 +11,9 @@ import seaborn as sns
 st.set_page_config(layout='wide')
 st.title("Dashboard HBOnco")
 
-st.sidebar.title("Filtros")
-dt_inicial = st.sidebar.date_input('Selecione a data inicial')
-dt_final = st.sidebar.date_input('Selecione a data final')
+#st.sidebar.title("Filtros")
+#dt_inicial = st.sidebar.date_input('Selecione a data inicial')
+#dt_final = st.sidebar.date_input('Selecione a data final')
 
 #Falta criar o filtro para o dataset usando as datas inicial e final selecionadas
 

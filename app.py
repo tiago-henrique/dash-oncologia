@@ -39,7 +39,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 st.sidebar.title("Menu")
-st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
+st.sidebar.page_link("/pages/internacao.py", label="Dados das Internações")
 
 st.image("logo-hbonco.webp")
 st.title(":blue[Dashboard HB Onco]")

@@ -208,7 +208,7 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-internacao['dias_internacao'] = dias_counts;
+internacao['dias_internacao'] = dias_internacao
 teste = internacao[['record_id','dias_internacao']]
 st.write(teste)
 

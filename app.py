@@ -70,6 +70,10 @@ st.header('Dados Admissão')
 #    'Bexiga','Rim','Outro','Sarcomas'
 #]
 
+dados_prontuario = admissao[['record_id', 'prontuario']]
+dados_prontuario.columns = ['Record Id','Prontuário']
+st.write(dados_prontuario)
+
 colunas_sp = [
     'Mama','Pulmão','C&P','SNC','Ovário','Próstata',
     'Esôfago','Via Biliar','Gástrico','Pâncreas',

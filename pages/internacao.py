@@ -209,8 +209,9 @@ dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
 internacao['dias_internacao'] = dias_internacao
-teste = internacao[['record_id','dias_internacao']]
-st.write(teste)
+diasInternado = internacao[['record_id','dias_internacao']]
+diasInternado.columns = ['Record Id', 'Dias Internado']
+st.write(diasInternado)
 
 din = dias_counts.reset_index()
 din.columns = ['Dias', 'Quantidade']

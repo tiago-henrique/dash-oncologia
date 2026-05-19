@@ -41,7 +41,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.image("imagem/logo-hbonco.webp")
+st.image("logo-hbonco.webp")
 st.sidebar.title("Menu")
 st.sidebar.page_link("app.py", label="Dados das Admissões")
 st.sidebar.title("Filtros")
@@ -121,13 +121,26 @@ causa_internacao_map = {
 internacao['causa_internacao'] = database['causa_internacao'].map(causa_internacao_map)
 st.header("Dados de Internação")
 
-conta_internacao = (
-    internacao['record_id']
+conta_internacoes = (
+    internacao
+    .groupby('record_id')['prontuario_alta']
     .value_counts()
-    .rename_axis('Id. Paciente')
     .reset_index(name='Total de Internações')
 )
-st.write(conta_internacao)
+
+conta_internacoes = conta_internacoes.sort_values(
+    by='Total de Internações',
+    ascending=False
+)
+
+conta_internacoes.columns = [
+    'Record ID',
+    'Prontuário',
+    'Total de Internações'
+]
+
+st.write(conta_internacoes)
+
 
 col20, col21 = st.columns(2, border=True)
 with col20:
@@ -223,8 +236,8 @@ causa_internacao = internacao['causa_internacao'].value_counts().reset_index()
 causa_internacao.columns = ['Causa', 'Quantidade']
 fig_causa_internacao = px.bar(causa_internacao, x='Causa', y='Quantidade', text='Quantidade', title='Causas de Internação')
 fig_causa_internacao.update_traces(textposition='outside')
-with col10:
-    st.plotly_chart(fig_causa_internacao, use_container_width=True)
+#with col10:
+    #st.plotly_chart(fig_causa_internacao, use_container_width=True)
 
 infeccao_map = {
     1 : "Infecção urinária",
@@ -346,6 +359,7 @@ df['tempo_dias'] = (df['data_da_alta'] - df['data_da_interna_o']).dt.days
 resultado = df.groupby('causa_internacao')['tempo_dias'].mean().reset_index()
 resultado.columns = ['Causa da Internação', 'Média de Tempo (dias)']
 resultado = resultado.sort_values(by='Média de Tempo (dias)', ascending=False)
+resultado = round(resultado,0)
 st.write(resultado)
 
 #Análise estatística comparando tempo de internação com motivo da internação
@@ -356,5 +370,20 @@ grupos = [
 ]
 stat, p = kruskal(*grupos)
 st.error(f"Teste de Kuskal comparando tempo de internação e motivo de internação p-valor: {p:.2f}")
+
+# st.header("Causas de Óbitos")
+obitos = internacao[(internacao['desfecho'] == 'Óbito') | (internacao['desfecho'] == 'Óbito - UTI')]
+
+#causa_obito = obitos[['record_id','prontuario_alta','causa_obito']]
+#causa_obito.columns = ['Record Id', 'Prontuário', 'Causa do óbito']
+#st.write(causa_obito)
+
+st.header("Motivo da Internação / Causa do Óbito")
+motivo_internacao = obitos[['record_id','prontuario_alta','causa_internacao','causa_obito']]
+motivo_internacao.columns = ['Record Id','Prontuário', 'Causa da Internação','Causa do óbito']
+st.write(motivo_internacao)
 #Footer
-st.write("Criado por Tiago Henrique")
+st.write("Desenvolvido por Tiago Henrique - 2026")
+
+# * Média de reinternações 
+# * Inserir prontuário na primeira planilha "Dados da internação"

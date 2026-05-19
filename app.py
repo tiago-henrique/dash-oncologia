@@ -81,9 +81,6 @@ colunas_sp = [
     'Bexiga','Rim','Outro','Sarcomas'
 ]
 
-total_admissao = admissao['record_id'].sum()
-st.write(f"Total de admissões: {total_admissao}")
-
 dados_sp = admissao[colunas_sp].sum().reset_index()
 dados_sp.columns = ['Tipo', 'Total']
 dados_sp = dados_sp.sort_values(by='Total', ascending=False)

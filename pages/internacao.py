@@ -209,7 +209,7 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-teste = (dias_internacao).sort_values().reset_index()
+teste = (dias_internacao).sort_values()
 teste.columns = ['Id do Paciente', 'Dias Internado']
 st.write(teste)
 

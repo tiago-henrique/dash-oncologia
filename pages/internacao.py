@@ -41,7 +41,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.image("logo-hbonco.webp")
+st.image("imagem/logo-hbonco.webp")
 st.sidebar.title("Menu")
 st.sidebar.page_link("app.py", label="Dados das Admissões")
 st.sidebar.title("Filtros")

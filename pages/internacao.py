@@ -138,7 +138,6 @@ conta_internacoes.columns = [
     'Prontuário',
     'Total de Internações'
 ]
-
 st.write(conta_internacoes)
 
 
@@ -209,7 +208,9 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-st.write(dias_counts)
+internacao['dias_internacao'] = dias_counts;
+teste = internacao[['record_id','dias_intenacao']]
+st.write(teste)
 
 din = dias_counts.reset_index()
 din.columns = ['Dias', 'Quantidade']

@@ -41,7 +41,7 @@ st.markdown("""
 st.sidebar.title("Menu")
 st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
 
-st.image("logo-hbonco.webp")
+st.image("imagem/logo-hbonco.webp")
 st.title(":blue[Dashboard HB Onco]")
 
 file_path = st.secrets["CAMINHO"]

@@ -11,6 +11,7 @@ import datetime
 import requests
 import seaborn as sns
 
+st.set_page_config(layout="wide")
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {
@@ -37,6 +38,25 @@ st.markdown("""
         background-color: #fff;
         color: white;
         border-color: #fff;
+    }
+            
+    .media_dias{
+        display: gird;
+        background-color: #FFF;
+        border-radius: 5px;
+        border-bottom: 10px;
+        color: #336799;
+        padding: 0.2rem;           
+    }
+    .content{
+        grid-tempplate-columns: 1fr 1fr;        
+    }
+    .media_dias h1{
+        font-size: 16px;
+        text-align: center;
+    }
+    .media_dias p{
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -138,6 +158,7 @@ conta_internacoes.columns = [
     'Prontuário',
     'Total de Internações'
 ]
+
 st.write(conta_internacoes)
 
 
@@ -208,10 +229,9 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-internacao['dias_internacao'] = dias_internacao
-diasInternado = internacao[['record_id','dias_internacao']]
-diasInternado.columns = ['Record Id', 'Dias Internado']
-st.write(diasInternado)
+teste = (dias_internacao).sort_values().reset_index()
+teste.columns = ['Id do Paciente', 'Dias Internado']
+st.write(teste)
 
 din = dias_counts.reset_index()
 din.columns = ['Dias', 'Quantidade']
@@ -221,7 +241,7 @@ with col6:
     st.plotly_chart(fig_din, use_container_width=True)
 
 media_dias_internacao = dias_internacao.mean()
-st.info(f'Média de dias de internação: {media_dias_internacao:.2f} dias')
+st.info(f'Média de dias de internação: {media_dias_internacao:.0f} dias')
 
 col9, col10 = st.columns(2, border=True)
 internacao['estagio_clinico_internacao'] = internacao['estagio_clinico_internacao'].map(estagio_map)
@@ -267,13 +287,80 @@ manejo_map = {
     3 : "Náusea e Vómitos",
     4 : "Constipação"
 }
+
+# #Tipo de manejo
+    # manejo_sintomas = internacao['manejo_de_sintomas'].value_counts().reset_index()
+    # manejo_sintomas.columns = ['Tipo de Manejo', 'Quantidade']
+    # fig_manejo_sintomas = px.bar(manejo_sintomas, x='Tipo de Manejo', y='Quantidade', text='Quantidade', title='Tipo de Manejo')
+    # fig_manejo_sintomas.update_traces(textposition='outside')
+# with col12:
+#     st.plotly_chart(fig_manejo_sintomas, use_container_width=True)
+
+##Início gráfico clicável
 internacao['manejo_de_sintomas'] = internacao['manejo_de_sintomas'].map(manejo_map)
-manejo_sintomas = internacao['manejo_de_sintomas'].value_counts().reset_index()
-manejo_sintomas.columns = ['Tipo de Manejo', 'Quantidade']
-fig_manejo_sintomas = px.bar(manejo_sintomas, x='Tipo de Manejo', y='Quantidade', text='Quantidade', title='Tipo de Manejo')
-fig_manejo_sintomas.update_traces(textposition='outside')
+internacao['dias_internacao'] = dias_internacao
+
+# Contagem dos tipos de manejo
+tipo_manejo = (
+    internacao['manejo_de_sintomas']
+    .value_counts()
+    .reset_index()
+)
+
+tipo_manejo.columns = ['Tipo de Manejo', 'Quantidade']
+
+# Gráfico
+fig_clicavel = px.bar(
+    tipo_manejo,
+    x='Tipo de Manejo',
+    y='Quantidade'
+)
 with col12:
-    st.plotly_chart(fig_manejo_sintomas, use_container_width=True)
+    evento = st.plotly_chart(
+        fig_clicavel,
+        on_select="rerun",
+        key="meu_grafico",
+        use_container_width=True
+    )
+
+# Captura seleção
+selecao = st.session_state.get("meu_grafico")
+if (
+    selecao
+    and "selection" in selecao
+    and "points" in selecao["selection"]
+    and len(selecao["selection"]["points"]) > 0
+):
+    ponto = selecao["selection"]["points"][0]
+    # Nome da barra clicada
+    tipo_selecionado = ponto["x"]
+    # Filtrar pacientes daquele tipo
+    dados_filtrados = internacao[
+        internacao['manejo_de_sintomas'] == tipo_selecionado
+    ][[
+        'prontuario_alta',
+        'manejo_de_sintomas',
+        'dias_internacao'
+    ]]
+   
+    dados_filtrados.columns = ['Prontuário','Manejo de Sintomas','Dias de Internação']
+    st.header(f"Tipo de Manejo Selecionado: {tipo_selecionado}")
+   
+    dados_filtrados = dados_filtrados.sort_values(by='Dias de Internação', ascending=False)
+   
+    st.dataframe(dados_filtrados)
+    # Quantidade de internações
+    tamanho_internacao = len(dados_filtrados)
+    #st.write("Quantidade de pacientes:", tamanho_internacao)
+    # Estatísticas dos dias internados
+    media_dias = dados_filtrados['Dias de Internação'].mean()
+    media_dias = round(media_dias, 0)
+    st.markdown(f'<div class="media_dias"><div class="content"><h1>Quantidade de Pacientes</h1><p>{tamanho_internacao}</p><h1>Média de dias internados<h1><p>{media_dias}</p></div></div>', unsafe_allow_html=True)
+
+
+else:
+    st.info("Nenhuma barra selecionada.")
+##Término gráfico clicável
 
 col13, col14 = st.columns(2, border=True)    
 dispositivos_map = {

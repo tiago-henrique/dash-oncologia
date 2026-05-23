@@ -22,6 +22,35 @@ st.markdown("""
 
 st.markdown("""
 <style>
+    header{
+        width{
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+    }
+    .titulo{
+        background-color: #004170;  
+        color: #FFF;
+        font-size: 54px;
+        font-weight: bold;
+        width: 100%;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .total-internacao{
+        border-radius: 5px;
+        background-color: #004170;
+        margin-top: 10px;
+        width: 15%;
+        text-align: center;
+    }
+    .total-internacao p{
+        font-weight: bold;
+        padding: 1rem;
+        color: #FFF;
+        font-size: 14px;
+    }
     /* Estilo para links personalizados */
     div.stPageLink a {
         background-color: #fff;
@@ -61,7 +90,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+st.markdown(f"<div class='titulo'>Dashboard HB Onco</div>", unsafe_allow_html=True)
 st.image("imagem/logo-hbonco.webp")
+
 st.sidebar.title("Menu")
 st.sidebar.page_link("app.py", label="Dados das Admissões")
 st.sidebar.title("Filtros")
@@ -98,7 +129,7 @@ if filtrar_data == "Não" or not filtrar_data:
         database['redcap_repeat_instrument'] == 'internao'
     ]
     total_internacoes = internacao.shape[0]
-    st.write(f"Total de internações: {total_internacoes}")
+    st.markdown(f"<div class='total-internacao'><p>Total de Internações: {total_internacoes}</div>", unsafe_allow_html=True)
 else:
     if data_inicial > data_final:
         st.error("A data inicial não pode ser maior que a final")
@@ -114,7 +145,7 @@ else:
         (database['data_da_interna_o'] < data_final)
     ]
     total_internacoes = internacao.shape[0]
-    st.write(f"Total de Internações: {total_internacoes}")
+    st.markdown(f"<div class='total-internacao'><p>Total de Internações: {total_internacoes}</div>", unsafe_allow_html=True)
 
 estagio_map = {
     1 : 'Estágio I',
@@ -355,11 +386,12 @@ with col12:
         dados_filtrados = internacao[
             internacao['manejo_de_sintomas'] == tipo_selecionado
         ][[
+            'record_id',
             'prontuario_alta',
             'dias_internacao'
         ]]
     
-        dados_filtrados.columns = ['Prontuário','Dias de Internação']
+        dados_filtrados.columns = ['Record ID','Prontuário','Dias de Internação']
         
         dados_filtrados = dados_filtrados.sort_values(by='Dias de Internação', ascending=False)
         st.header(f"Tipo de Manejo Selecionado: {tipo_selecionado}")
@@ -371,10 +403,8 @@ with col12:
         # Estatísticas dos dias internados
         media_dias = dados_filtrados['Dias de Internação'].mean()
         media_dias = round(media_dias, 0)
-        st.warning(f"Média de dias de internação: {media_dias} dias")
+        st.success(f"Média de dias de internação: {media_dias} dias")
         #st.markdown(f'<div class="media_dias"><div class="content"><h1>Quantidade de Pacientes</h1><p>{tamanho_internacao}</p><h1>Média de dias internados<h1><p>{media_dias}</p></div></div>', unsafe_allow_html=True)
-
-
     else:
         st.info("Nenhuma barra selecionada.")
 ##Término gráfico clicável

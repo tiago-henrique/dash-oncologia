@@ -19,6 +19,35 @@ st.markdown("""
 
 st.markdown("""
 <style>
+    header{
+        width{
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+    }
+    .titulo{
+        background-color: #004170;  
+        color: #FFF;
+        font-size: 54px;
+        font-weight: bold;
+        width: 100%;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .total-internacao{
+        border-radius: 5px;
+        background-color: #004170;
+        margin-top: 10px;
+        width: 15%;
+        text-align: center;
+    }
+    .total-internacao p{
+        font-weight: bold;
+        padding: 1rem;
+        color: #FFF;
+        font-size: 14px;
+    }
     /* Estilo para links personalizados */
     div.stPageLink a {
         background-color: #fff;
@@ -34,15 +63,35 @@ st.markdown("""
     div.stPageLink a:hover {
         background-color: #fff;
         color: white;
-        border-color: #ff4b4b;
+        border-color: #fff;
+    }
+            
+    .media_dias{
+        display: gird;
+        background-color: #FFF;
+        border-radius: 5px;
+        border-bottom: 10px;
+        color: #336799;
+        padding: 0.2rem;
+    }
+    .content{
+        grid-tempplate-columns: 1fr 1fr;        
+    }
+    .media_dias h1{
+        font-size: 16px;
+        text-align: center;
+    }
+    .media_dias p{
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
 st.sidebar.title("Menu")
 st.sidebar.page_link("pages/internacao.py", label="Dados das Internações")
 
+st.markdown(f"<div class='titulo'>Dashboard HB Onco</div>", unsafe_allow_html=True)
+
 st.image("imagem/logo-hbonco.webp")
-st.title(":blue[Dashboard HB Onco]")
 
 file_path = st.secrets["CAMINHO"]
 response = requests.head(file_path)

@@ -46,7 +46,7 @@ st.markdown("""
         border-radius: 5px;
         border-bottom: 10px;
         color: #336799;
-        padding: 0.2rem;           
+        padding: 0.2rem;
     }
     .content{
         grid-tempplate-columns: 1fr 1fr;        
@@ -161,6 +161,16 @@ conta_internacoes.columns = [
 
 st.write(conta_internacoes)
 
+internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
+internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')
+internacao['data_da_interna_o'] = pd.to_datetime(internacao['data_da_interna_o'], errors='coerce')
+internacao['data_da_alta'] = pd.to_datetime(internacao['data_da_alta'], errors='coerce')
+tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
+dias_internacao = tempo_internacao.dt.days
+dias_counts = dias_internacao.value_counts()
+dias_counts = dias_counts.sort_values(ascending=False)
+internacao['dias_internacao'] = dias_internacao
+
 
 col20, col21 = st.columns(2, border=True)
 with col20:
@@ -168,23 +178,29 @@ with col20:
 if paciente:
     try:
         paciente = int(paciente)
-        causas_paciente = internacao[internacao['record_id'] == paciente]['causa_internacao'].reset_index()
+        causas_paciente = internacao[
+            internacao['record_id'] == paciente
+        ][['causa_internacao', 'dias_internacao']]
         if not causas_paciente.empty:
+            causas_paciente.columns = [
+                'Motivo',
+                'Dias de Internação'
+            ]
             with col21:
-                causas_paciente.columns = ['Registro', 'Motivo']
-                st.subheader(f"Motivos da internação - Paciente {paciente}")
-                st.write(causas_paciente.value_counts())
+                st.subheader(
+                    f"Motivos da internação - Paciente {paciente}"
+                )
+
+                st.dataframe(
+                    causas_paciente,
+                    use_container_width=True
+                )
         else:
             with col21:
                 st.error("Paciente não encontrado")
-    except:
+    except ValueError:
         with col21:
             st.error("ID deve ser numérico")
-
-internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
-internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')
-internacao['data_da_interna_o'] = pd.to_datetime(internacao['data_da_interna_o'], errors='coerce')
-internacao['data_da_alta'] = pd.to_datetime(internacao['data_da_alta'], errors='coerce')
 
 idade = internacao['data_da_interna_o'] - internacao['dob']
 idade_anos = idade.dt.days // 365
@@ -224,10 +240,10 @@ with col5:
     st.plotly_chart(fig_idade_internacoes, use_container_width=True)
     
 #Calcular tempo de internação
-tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
-dias_internacao = tempo_internacao.dt.days
-dias_counts = dias_internacao.value_counts()
-dias_counts = dias_counts.sort_values(ascending=False)
+# tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
+# dias_internacao = tempo_internacao.dt.days
+# dias_counts = dias_internacao.value_counts()
+# dias_counts = dias_counts.sort_values(ascending=False)
 
 teste = (dias_internacao).sort_values().reset_index()
 teste.columns = ['Id do Paciente', 'Dias Internado']
@@ -271,14 +287,12 @@ infeccao_map = {
     9 : "Colangite"
 }
 
-col11, col12 = st.columns(2, border=True)
-
 internacao['tipo_infeccao'] = internacao['tipo_infeccao'].map(infeccao_map)
 tipo_infeccao = internacao['tipo_infeccao'].value_counts().reset_index()
 tipo_infeccao.columns = ['Tipo de Infecção', 'Quantidade']
 fig_tipo_infeccao = px.bar(tipo_infeccao, x='Tipo de Infecção', y='Quantidade', text='Quantidade', title='Tipo de Infecção')
 fig_tipo_infeccao.update_traces(textposition='outside')
-with col11:
+with col10:
     st.plotly_chart(fig_tipo_infeccao)
 
 manejo_map = {
@@ -298,7 +312,7 @@ manejo_map = {
 
 ##Início gráfico clicável
 internacao['manejo_de_sintomas'] = internacao['manejo_de_sintomas'].map(manejo_map)
-internacao['dias_internacao'] = dias_internacao
+# internacao['dias_internacao'] = dias_internacao
 
 # Contagem dos tipos de manejo
 tipo_manejo = (
@@ -315,7 +329,9 @@ fig_clicavel = px.bar(
     x='Tipo de Manejo',
     y='Quantidade'
 )
-with col12:
+col11, col12 = st.columns(2, border=True)
+
+with col11:
     evento = st.plotly_chart(
         fig_clicavel,
         on_select="rerun",
@@ -324,42 +340,43 @@ with col12:
     )
 
 # Captura seleção
-selecao = st.session_state.get("meu_grafico")
-if (
-    selecao
-    and "selection" in selecao
-    and "points" in selecao["selection"]
-    and len(selecao["selection"]["points"]) > 0
-):
-    ponto = selecao["selection"]["points"][0]
-    # Nome da barra clicada
-    tipo_selecionado = ponto["x"]
-    # Filtrar pacientes daquele tipo
-    dados_filtrados = internacao[
-        internacao['manejo_de_sintomas'] == tipo_selecionado
-    ][[
-        'prontuario_alta',
-        'manejo_de_sintomas',
-        'dias_internacao'
-    ]]
-   
-    dados_filtrados.columns = ['Prontuário','Manejo de Sintomas','Dias de Internação']
-    st.header(f"Tipo de Manejo Selecionado: {tipo_selecionado}")
-   
-    dados_filtrados = dados_filtrados.sort_values(by='Dias de Internação', ascending=False)
-   
-    st.dataframe(dados_filtrados)
-    # Quantidade de internações
-    tamanho_internacao = len(dados_filtrados)
-    #st.write("Quantidade de pacientes:", tamanho_internacao)
-    # Estatísticas dos dias internados
-    media_dias = dados_filtrados['Dias de Internação'].mean()
-    media_dias = round(media_dias, 0)
-    st.markdown(f'<div class="media_dias"><div class="content"><h1>Quantidade de Pacientes</h1><p>{tamanho_internacao}</p><h1>Média de dias internados<h1><p>{media_dias}</p></div></div>', unsafe_allow_html=True)
+with col12:
+    selecao = st.session_state.get("meu_grafico")
+    if (
+        selecao
+        and "selection" in selecao
+        and "points" in selecao["selection"]
+        and len(selecao["selection"]["points"]) > 0
+    ):
+        ponto = selecao["selection"]["points"][0]
+        # Nome da barra clicada
+        tipo_selecionado = ponto["x"]
+        # Filtrar pacientes daquele tipo
+        dados_filtrados = internacao[
+            internacao['manejo_de_sintomas'] == tipo_selecionado
+        ][[
+            'prontuario_alta',
+            'dias_internacao'
+        ]]
+    
+        dados_filtrados.columns = ['Prontuário','Dias de Internação']
+        
+        dados_filtrados = dados_filtrados.sort_values(by='Dias de Internação', ascending=False)
+        st.header(f"Tipo de Manejo Selecionado: {tipo_selecionado}")
+
+        st.dataframe(dados_filtrados)
+        # Quantidade de internações
+        tamanho_internacao = len(dados_filtrados)
+        #st.write("Quantidade de pacientes:", tamanho_internacao)
+        # Estatísticas dos dias internados
+        media_dias = dados_filtrados['Dias de Internação'].mean()
+        media_dias = round(media_dias, 0)
+        st.warning(f"Média de dias de internação: {media_dias} dias")
+        #st.markdown(f'<div class="media_dias"><div class="content"><h1>Quantidade de Pacientes</h1><p>{tamanho_internacao}</p><h1>Média de dias internados<h1><p>{media_dias}</p></div></div>', unsafe_allow_html=True)
 
 
-else:
-    st.info("Nenhuma barra selecionada.")
+    else:
+        st.info("Nenhuma barra selecionada.")
 ##Término gráfico clicável
 
 col13, col14 = st.columns(2, border=True)    

@@ -191,7 +191,6 @@ conta_internacoes.columns = [
 ]
 
 st.write(conta_internacoes)
-st.write(internacao.columns)
 
 internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
 internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')

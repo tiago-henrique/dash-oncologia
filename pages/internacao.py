@@ -201,8 +201,8 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-col20, col21 = st.columns(2, border=True)
-with col20:
+col1, col2 = st.columns(2, border=True)
+with col1:
     paciente = st.text_input("Digite o ID do paciente para visualizar os motivos das internações")
 if paciente:
     try:
@@ -215,7 +215,7 @@ if paciente:
                 'Motivo',
                 'Dias de Internação'
             ]
-            with col21:
+            with col2:
                 st.subheader(
                     f"Motivos da internação - Paciente {paciente}"
                 )
@@ -225,10 +225,10 @@ if paciente:
                     use_container_width=True
                 )
         else:
-            with col21:
+            with col2:
                 st.error("Paciente não encontrado")
     except ValueError:
-        with col21:
+        with col2:
             st.error("ID deve ser numérico")
 
 idade = internacao['data_da_interna_o'] - internacao['dob']
@@ -264,8 +264,8 @@ fig_idade_internacoes = px.bar(
 fig_idade_internacoes.update_traces(textposition='outside')
 fig_idade_internacoes.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
 
-col5, col6 = st.columns(2, border=True)
-with col5:
+col3, col4 = st.columns(2, border=True)
+with col3:
     st.plotly_chart(fig_idade_internacoes, use_container_width=True)
     
 #Gráfico
@@ -276,19 +276,20 @@ fig_din = px.bar(din, x='Dias', y='Quantidade', text='Quantidade', title='Dias d
 fig_din.update_traces(textposition='inside', width=0.7)
 fig_din.update_layout(bargap=0.2)
 
-with col6:
+with col4:
     st.plotly_chart(fig_din, use_container_width=True)
 
 media_dias_internacao = dias_internacao.mean()
 st.info(f'Média de dias de internação: {media_dias_internacao:.0f} dias')
 
-col9, col10 = st.columns(2, border=True)
+col5, col6 = st.columns(2, border=True)
+
 internacao['estagio_clinico_internacao'] = internacao['estagio_clinico_internacao'].map(estagio_map)
 eci = internacao['estagio_clinico_internacao'].value_counts().reset_index()
 eci.columns = ['Estágio', 'Quantidade']
 fig_eci = px.bar(eci, x='Estágio', y='Quantidade', text='Quantidade', title='Estágio Clínico')
 fig_eci.update_traces(textposition='outside')
-with col9:
+with col5:
     st.plotly_chart(fig_eci)
 
 causa_internacao = internacao['causa_internacao'].value_counts().reset_index()
@@ -315,7 +316,7 @@ tipo_infeccao = internacao['tipo_infeccao'].value_counts().reset_index()
 tipo_infeccao.columns = ['Tipo de Infecção', 'Quantidade']
 fig_tipo_infeccao = px.bar(tipo_infeccao, x='Tipo de Infecção', y='Quantidade', text='Quantidade', title='Tipo de Infecção')
 fig_tipo_infeccao.update_traces(textposition='outside')
-with col10:
+with col6:
     st.plotly_chart(fig_tipo_infeccao)
 
 manejo_map = {
@@ -352,9 +353,9 @@ fig_clicavel = px.bar(
     x='Tipo de Manejo',
     y='Quantidade'
 )
-col11, col12 = st.columns(2, border=True)
+col7, col8 = st.columns(2, border=True)
 
-with col11:
+with col7:
     evento = st.plotly_chart(
         fig_clicavel,
         on_select="rerun",
@@ -363,7 +364,7 @@ with col11:
     )
 
 # Captura seleção
-with col12:
+with col8:
     selecao = st.session_state.get("meu_grafico")
     if (
         selecao
@@ -401,7 +402,6 @@ with col12:
         st.info("Nenhuma barra selecionada.")
 ##Término gráfico clicável
 
-col13, col14 = st.columns(2, border=True)
 dispositivos_map = {
     1 : "Gastrostomia",
 	2 : "SNE",
@@ -418,9 +418,7 @@ dispositivo = (
     .value_counts()
     .reset_index()
 )
-
 dispositivo.columns = ['Tipo de Dispositivo', 'Quantidade']
-
 # Gráfico
 fig_clicavel_dispositivo = px.bar(
     dispositivo,
@@ -428,9 +426,9 @@ fig_clicavel_dispositivo = px.bar(
     y='Quantidade'
 )
 
-col13, col14 = st.columns(2, border=True)
+col9, col10 = st.columns(2, border=True)
 
-with col13:
+with col9:
     evento_dispositivo = st.plotly_chart(
         fig_clicavel_dispositivo,
         on_select="rerun",
@@ -439,7 +437,7 @@ with col13:
     )
 
 # Captura seleção
-with col13:
+with col10:
     selecao_dispositivo = st.session_state.get("meu_grafico_dispositivo")
     if (
         selecao_dispositivo
@@ -482,7 +480,6 @@ with col13:
 # dispositivos.columns = ['Dispositivo', 'Quantidade']
 # fig_dispositivo = px.bar(dispositivos, x='Dispositivo', y='Quantidade', text='Quantidade', title='Tipo de Dispositivo')
 # fig_dispositivo.update_traces(textposition='outside')
-
 #with col13:
 #    st.plotly_chart(fig_dispositivo)
 
@@ -506,11 +503,11 @@ progressao_doenca.columns = ['Progressão', 'Quantidade']
 fig_progressao = px.bar(progressao_doenca, x='Progressão', y='Quantidade', text='Quantidade', title='Progressão da Doença')
 fig_progressao.update_traces(textposition='outside')
 
-with col14:
+col11, col12 = st.columns(2, border=True)
+
+with col11:
     st.plotly_chart(fig_progressao)
 
-
-col15, col16 = st.columns(2, border=True)
 #Desfecho internação
 desfecho_map = {
     1 : "Alta Hospitalar",
@@ -526,9 +523,8 @@ desfecho_internacao = internacao['desfecho'].value_counts().reset_index()
 desfecho_internacao.columns = ['Desfecho', 'Quantidade']
 fig_desfecho = px.bar(desfecho_internacao, x='Desfecho', y='Quantidade', text='Quantidade', title='Desfecho Hospitalar')
 fig_desfecho.update_traces(textposition='outside')
-with col15:
+with col12:
     st.plotly_chart(fig_desfecho, use_container_width=True)
-
 
 obito_map = {
     1 : "Complicações clínicas",
@@ -541,7 +537,9 @@ causa_obito = internacao['causa_obito'].value_counts().reset_index()
 causa_obito.columns = ['Causa do óbito', 'Quantidade']
 fig_causa_obito = px.bar(causa_obito, x='Causa do óbito', y='Quantidade', text='Quantidade', title='Causa do Óbito')
 fig_causa_obito.update_traces(textposition='outside')
-with col16:
+
+col13, col14 = st.columns(2, border=True)
+with col13:
     st.plotly_chart(fig_causa_obito, width='stretch')
 
 #Correlações
@@ -564,12 +562,8 @@ grupos = [
 stat, p = kruskal(*grupos)
 st.error(f"Teste de Kuskal comparando tempo de internação e motivo de internação p-valor: {p:.2f}")
 
-# st.header("Causas de Óbitos")
+#Causas de óbito
 obitos = internacao[(internacao['desfecho'] == 'Óbito') | (internacao['desfecho'] == 'Óbito - UTI')]
-
-#causa_obito = obitos[['record_id','prontuario_alta','causa_obito']]
-#causa_obito.columns = ['Record Id', 'Prontuário', 'Causa do óbito']
-#st.write(causa_obito)
 
 st.header("Motivo da Internação / Causa do Óbito")
 motivo_internacao = obitos[['record_id','prontuario_alta','causa_internacao','causa_obito']]

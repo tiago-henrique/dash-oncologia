@@ -201,7 +201,6 @@ dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
 
-st.write(internacao[['record_id','dias_internacao']])
 col20, col21 = st.columns(2, border=True)
 with col20:
     paciente = st.text_input("Digite o ID do paciente para visualizar os motivos das internações")

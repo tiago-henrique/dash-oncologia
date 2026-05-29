@@ -409,23 +409,90 @@ with col12:
         st.info("Nenhuma barra selecionada.")
 ##Término gráfico clicável
 
-col13, col14 = st.columns(2, border=True)    
+col13, col14 = st.columns(2, border=True)
 dispositivos_map = {
     1 : "Gastrostomia",
-    2 : "SNE",
-    3 : "Port-a-cath",
-    4 : "Dj/Nefrostomia",
-    5 : "Traqueostomia"
+	2 : "SNE",
+	3 : "Port-a-cath",
+	4 : "Dj/Nefrostomia",
+	5 : "Traqueostomia",
+	6 : "Protese Biliar",
+	7 : "Outro dispositivo"
 }
+#Inpicio clicavel dispositivo
+internacao['dispositivos'] = internacao['dispositivos'].replace(dispositivos_map)
+dispositivo = (
+    internacao['dispositivos']
+    .value_counts()
+    .reset_index()
+)
 
-internacao['dispositivos'] = internacao['dispositivos'].map(dispositivos_map)
-dispositivos = internacao['dispositivos'].value_counts().reset_index()
-dispositivos.columns = ['Dispositivo', 'Quantidade']
-fig_dispositivo = px.bar(dispositivos, x='Dispositivo', y='Quantidade', text='Quantidade', title='Tipo de Dispositivo')
-fig_dispositivo.update_traces(textposition='outside')
+dispositivo.columns = ['Tipo de Dispositivo', 'Quantidade']
+
+# Gráfico
+fig_clicavel_dispositivo = px.bar(
+    dispositivo,
+    x='Tipo de Dispositivo',
+    y='Quantidade'
+)
+
+col13, col14 = st.columns(2, border=True)
 
 with col13:
-    st.plotly_chart(fig_dispositivo)
+    evento_dispositivo = st.plotly_chart(
+        fig_clicavel_dispositivo,
+        on_select="rerun",
+        key="meu_grafico_dispositivo",
+        use_container_width=True
+    )
+
+# Captura seleção
+with col13:
+    selecao_dispositivo = st.session_state.get("meu_grafico_dispositivo")
+    if (
+        selecao_dispositivo
+        and "selection" in selecao_dispositivo
+        and "points" in selecao_dispositivo["selection"]
+        and len(selecao_dispositivo["selection"]["points"]) > 0
+    ):
+        ponto_dispositivo = selecao_dispositivo["selection"]["points"][0]
+        # Nome da barra clicada
+        tipo_selecionado_dispositivo = ponto_dispositivo["x"]
+        # Filtrar pacientes daquele tipo
+        dados_filtrados_dispositivo = internacao[
+            internacao['dispositivos'] == tipo_selecionado_dispositivo
+        ][[
+            'record_id',
+            'prontuario_alta',
+            'dias_internacao'
+        ]]
+    
+        dados_filtrados_dispositivo.columns = ['Record ID','Prontuário','Dias de Internação']
+        
+        dados_filtrados_dispositivo = dados_filtrados_dispositivo.sort_values(by='Dias de Internação', ascending=False)
+        st.header(f"Tipo de dispositivo selecionado: {tipo_selecionado_dispositivo}")
+
+        st.dataframe(dados_filtrados_dispositivo)
+        # Quantidade de internações
+        tamanho_internacao_dispositivo = len(dados_filtrados_dispositivo)
+        #st.write("Quantidade de pacientes:", tamanho_internacao)
+        # Estatísticas dos dias internados
+        media_dias_dispositivo = dados_filtrados_dispositivo['Dias de Internação'].mean()
+        media_dias_dispositivo = round(media_dias_dispositivo, 0)
+        st.success(f"Média de dias de internação: {media_dias_dispositivo} dias")
+        #st.markdown(f'<div class="media_dias"><div class="content"><h1>Quantidade de Pacientes</h1><p>{tamanho_internacao}</p><h1>Média de dias internados<h1><p>{media_dias}</p></div></div>', unsafe_allow_html=True)
+    else:
+        st.info("Nenhuma barra selecionada.")
+
+#Fim clicavel dispositivo
+# internacao['dispositivos'] = internacao['dispositivos'].map(dispositivos_map)
+# dispositivos = internacao['dispositivos'].value_counts().reset_index()
+# dispositivos.columns = ['Dispositivo', 'Quantidade']
+# fig_dispositivo = px.bar(dispositivos, x='Dispositivo', y='Quantidade', text='Quantidade', title='Tipo de Dispositivo')
+# fig_dispositivo.update_traces(textposition='outside')
+
+#with col13:
+#    st.plotly_chart(fig_dispositivo)
 
 pd_map = {
     1 : "Hipercalcemia da Malignidade",

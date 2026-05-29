@@ -191,6 +191,7 @@ conta_internacoes.columns = [
 ]
 
 st.write(conta_internacoes)
+st.write(internacao.columns)
 
 internacao['dob'] = pd.to_datetime(internacao['dob'], errors='coerce')
 internacao['data_de_nascimento'] = pd.to_datetime(internacao['data_de_nascimento'], errors='coerce')
@@ -200,9 +201,8 @@ tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
 dias_internacao = tempo_internacao.dt.days
 dias_counts = dias_internacao.value_counts()
 dias_counts = dias_counts.sort_values(ascending=False)
-internacao['dias_internacao'] = dias_internacao
 
-
+st.write(internacao[['record_id','dias_internacao']])
 col20, col21 = st.columns(2, border=True)
 with col20:
     paciente = st.text_input("Digite o ID do paciente para visualizar os motivos das internações")
@@ -270,20 +270,14 @@ col5, col6 = st.columns(2, border=True)
 with col5:
     st.plotly_chart(fig_idade_internacoes, use_container_width=True)
     
-#Calcular tempo de internação
-# tempo_internacao = internacao['data_da_alta'] - internacao['data_da_interna_o']
-# dias_internacao = tempo_internacao.dt.days
-# dias_counts = dias_internacao.value_counts()
-# dias_counts = dias_counts.sort_values(ascending=False)
-
-teste = (dias_internacao).sort_values().reset_index()
-teste.columns = ['Id do Paciente', 'Dias Internado']
-st.write(teste)
-
-din = dias_counts.reset_index()
+#Gráfico
+dias_counts_1 = internacao['dias_internacao'].value_counts()
+din = dias_counts_1.reset_index()
 din.columns = ['Dias', 'Quantidade']
 fig_din = px.bar(din, x='Dias', y='Quantidade', text='Quantidade', title='Dias de Internação')
-fig_din.update_traces(textposition='inside')
+fig_din.update_traces(textposition='inside', width=0.7)
+fig_din.update_layout(bargap=0.2)
+
 with col6:
     st.plotly_chart(fig_din, use_container_width=True)
 

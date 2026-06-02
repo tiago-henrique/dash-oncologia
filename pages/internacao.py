@@ -104,24 +104,24 @@ data_inicial = st.sidebar.date_input('Selecione a data inicial')
 data_final = st.sidebar.date_input('Selecione a data final')
 
 # Caminho e metadata
-#file_path = st.secrets["CAMINHO"]
-#response = requests.head(file_path)
-#last_modified = response.headers.get("Last-Modified")
-
 file_path = st.secrets["CAMINHO"]
-
 response = requests.head(file_path)
 last_modified = response.headers.get("Last-Modified")
 
-if last_modified:
-    dt_utc = parsedate_to_datetime(last_modified)
-    dt_br = dt_utc.astimezone(ZoneInfo("America/Sao_Paulo"))
+#file_path = st.secrets["CAMINHO"]
 
-    st.success(
-        f"Dados atualizados em: {dt_br.strftime('%d/%m/%Y %H:%M:%S')}"
-    )
-else:
-    st.warning("Cabeçalho Last-Modified não encontrado.")
+#response = requests.head(file_path)
+#last_modified = response.headers.get("Last-Modified")
+
+#if last_modified:
+#    dt_utc = parsedate_to_datetime(last_modified)
+#    dt_br = dt_utc.astimezone(ZoneInfo("America/Sao_Paulo"))
+
+#    st.success(
+#        f"Dados atualizados em: {dt_br.strftime('%d/%m/%Y %H:%M:%S')}"
+#    )
+#else:
+#    st.warning("Cabeçalho Last-Modified não encontrado.")
 
 # Carregar base
 try:

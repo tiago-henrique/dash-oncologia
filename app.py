@@ -1,8 +1,9 @@
-
+```python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import requests
+from datetime import datetime
 
 
 # ============================================================
@@ -21,23 +22,47 @@ st.set_page_config(
 # CSS
 # ============================================================
 
-st.markdown("""
-<style>
+st.markdown(
+    """
+    <style>
 
     /* Oculta navegação padrão do Streamlit */
     [data-testid="stSidebarNav"] {
         display: none;
     }
 
-    /* Título principal */
+    /* Reduz espaço superior */
+    .block-container {
+        padding-top: 1rem;
+    }
+
+    /* Cabeçalho */
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+
+    .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .logo-container img {
+        width: 90px;
+        max-width: 90px;
+        height: auto;
+    }
+
     .titulo {
         background-color: #004170;
         color: white;
-        font-size: 42px;
+        font-size: 32px;
         font-weight: bold;
         width: 100%;
-        margin-bottom: 20px;
-        padding: 15px;
+        padding: 12px 18px;
         text-align: center;
         border-radius: 8px;
     }
@@ -73,8 +98,10 @@ st.markdown("""
         font-size: 14px;
     }
 
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
@@ -90,83 +117,147 @@ st.sidebar.page_link(
 
 
 # ============================================================
-# TÍTULO
-# ============================================================
-
-st.markdown(
-    "<div class='titulo'>Dashboard HB Onco</div>",
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# LOGO
-# ============================================================
-
-try:
-    st.image(
-        "imagem/logo-hbonco.webp",
-        use_container_width=True
-    )
-except Exception:
-    st.warning("Logo do HB Onco não encontrada.")
-
-
-# ============================================================
 # CONFIGURAÇÕES
 # ============================================================
 
 REDCAP_API_URL = st.secrets.get("REDCAP_API_URL", "")
 REDCAP_API_TOKEN = st.secrets.get("REDCAP_API_TOKEN", "")
 
-DATABASE_PATH = st.secrets.get("DATABASE", "")
-CAMINHO_ATUALIZACAO = st.secrets.get("CAMINHO", "")
+# Caminho do logotipo
+LOGO_PATH = "imagem/logo-hbonco.webp"
 
 
 # ============================================================
-# FUNÇÃO — DATA DA ÚLTIMA ATUALIZAÇÃO
+# CABEÇALHO
 # ============================================================
 
-def obter_ultima_atualizacao(url):
-    """
-    Obtém a informação Last-Modified de um arquivo remoto.
-    """
+col_logo, col_titulo = st.columns([1, 7])
 
-    if not url:
-        return None
+with col_logo:
 
     try:
-        response = requests.head(
+
+        st.image(
+            LOGO_PATH,
+            width=90
+        )
+
+    except Exception:
+
+        st.warning("Logo não encontrada.")
+
+
+with col_titulo:
+
+    st.markdown(
+        """
+        <div class="titulo">
+            Dashboard HB Onco
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# VALIDAÇÃO DA API
+# ============================================================
+
+if not REDCAP_API_URL:
+
+    st.error(
+        "A variável REDCAP_API_URL não foi configurada "
+        "em st.secrets."
+    )
+
+    st.stop()
+
+
+if not REDCAP_API_TOKEN:
+
+    st.error(
+        "A variável REDCAP_API_TOKEN não foi configurada "
+        "em st.secrets."
+    )
+
+    st.stop()
+
+
+# ============================================================
+# FUNÇÃO — CONSULTAR API DO REDCAP
+# ============================================================
+
+@st.cache_data(ttl=300)
+def carregar_dados_api(url, token):
+    """
+    Consulta diretamente a API do REDCap e retorna
+    os registros como DataFrame.
+
+    Os dados são obtidos em formato JSON.
+    Não utiliza CSV nem arquivo intermediário.
+    """
+
+    payload = {
+        "token": token,
+        "content": "record",
+        "action": "export",
+        "format": "json",
+        "type": "flat",
+        "rawOrLabel": "raw",
+        "rawOrLabelHeaders": "raw",
+        "exportCheckboxLabel": "false",
+        "exportSurveyFields": "false",
+        "exportDataAccessGroups": "false"
+    }
+
+    try:
+
+        response = requests.post(
             url,
-            timeout=10,
-            allow_redirects=True
+            data=payload,
+            timeout=60
         )
 
         response.raise_for_status()
 
-        return response.headers.get("Last-Modified")
+    except requests.RequestException as e:
 
-    except requests.RequestException:
-        return None
-
-
-# ============================================================
-# FUNÇÃO — CARREGAR BANCO
-# ============================================================
-
-@st.cache_data(ttl=300)
-def carregar_database(caminho):
-    """
-    Carrega o banco de dados CSV.
-    O cache evita recarregar o arquivo a cada interação.
-    """
-
-    if not caminho:
-        raise ValueError(
-            "A variável DATABASE não foi configurada no secrets.toml."
+        raise RuntimeError(
+            f"Erro na comunicação com a API do REDCap: {e}"
         )
 
-    return pd.read_csv(caminho)
+
+    # --------------------------------------------------------
+    # Verifica resposta
+    # --------------------------------------------------------
+
+    try:
+
+        dados = response.json()
+
+    except ValueError:
+
+        raise RuntimeError(
+            "A API do REDCap não retornou um JSON válido."
+        )
+
+
+    # --------------------------------------------------------
+    # Nenhum registro
+    # --------------------------------------------------------
+
+    if not dados:
+
+        return pd.DataFrame()
+
+
+    # --------------------------------------------------------
+    # JSON → DataFrame
+    # --------------------------------------------------------
+
+    database = pd.DataFrame(dados)
+
+    return database
 
 
 # ============================================================
@@ -177,7 +268,10 @@ def renomear_colunas(database):
 
     mapa_colunas = {
 
+        # ----------------------------------------------------
         # Sítio primário
+        # ----------------------------------------------------
+
         "sitio_primario___1": "Mama",
         "sitio_primario___2": "Pulmão",
         "sitio_primario___3": "C&P",
@@ -199,13 +293,22 @@ def renomear_colunas(database):
         "sitio_primario___20": "Outro",
         "sitio_primario___21": "Sarcomas",
 
+        # ----------------------------------------------------
         # Outros
+        # ----------------------------------------------------
+
         "outro_sitio_primario": "Outro sítio primário",
 
+        # ----------------------------------------------------
         # Estágio
+        # ----------------------------------------------------
+
         "estagio_clinico": "Estágio clínico",
 
+        # ----------------------------------------------------
         # Metástases
+        # ----------------------------------------------------
+
         "metastase___1": "M Fígado",
         "metastase___2": "M Pulmão",
         "metastase___3": "M SNC",
@@ -216,9 +319,8 @@ def renomear_colunas(database):
         "metastase___8": "M Outro",
         "metastase___9": "Não se aplica",
         "metastase___10": "M Pleura",
-        "metastase___11": (
+        "metastase___11":
             "Progressão locoregional - em cenário paliativo"
-        )
     }
 
     return database.rename(columns=mapa_colunas)
@@ -244,8 +346,8 @@ def preparar_dados(database):
 
     else:
 
-        # Caso a coluna não exista, considera todo banco
         admissao = database.copy()
+
 
     # --------------------------------------------------------
     # Converter campos binários para numérico
@@ -285,14 +387,19 @@ def preparar_dados(database):
         "M Pleura"
     ]
 
+
     for coluna in colunas_binarias:
 
         if coluna in admissao.columns:
 
-            admissao[coluna] = pd.to_numeric(
-                admissao[coluna],
-                errors="coerce"
-            ).fillna(0)
+            admissao[coluna] = (
+                pd.to_numeric(
+                    admissao[coluna],
+                    errors="coerce"
+                )
+                .fillna(0)
+            )
+
 
     # --------------------------------------------------------
     # Estágio clínico
@@ -301,6 +408,7 @@ def preparar_dados(database):
     if "Estágio clínico" in admissao.columns:
 
         mapa_estagio = {
+
             1: "Estágio I",
             2: "Estágio II",
             3: "Estágio III",
@@ -316,16 +424,18 @@ def preparar_dados(database):
             .map(mapa_estagio)
         )
 
+
     return admissao
 
 
 # ============================================================
-# FUNÇÃO — GRÁFICO DE SÍTIO PRIMÁRIO
+# GRÁFICO — SÍTIO PRIMÁRIO
 # ============================================================
 
 def grafico_sitio_primario(admissao):
 
     colunas = [
+
         "Mama",
         "Pulmão",
         "C&P",
@@ -399,7 +509,7 @@ def grafico_sitio_primario(admissao):
 
 
 # ============================================================
-# FUNÇÃO — OUTROS SÍTIOS PRIMÁRIOS
+# GRÁFICO — OUTROS SÍTIOS
 # ============================================================
 
 def grafico_outros_sitios(admissao):
@@ -459,7 +569,7 @@ def grafico_outros_sitios(admissao):
 
 
 # ============================================================
-# FUNÇÃO — ESTÁGIO CLÍNICO
+# GRÁFICO — ESTÁGIO CLÍNICO
 # ============================================================
 
 def grafico_estagio(admissao):
@@ -524,12 +634,13 @@ def grafico_estagio(admissao):
 
 
 # ============================================================
-# FUNÇÃO — METÁSTASES
+# GRÁFICO — METÁSTASES
 # ============================================================
 
 def grafico_metastases(admissao):
 
     colunas = [
+
         "M Fígado",
         "M Pulmão",
         "M SNC",
@@ -538,7 +649,6 @@ def grafico_metastases(admissao):
         "M Linfonodos",
         "M Adrenal",
         "M Outro",
-        "Não se aplica",
         "M Pleura"
     ]
 
@@ -594,36 +704,42 @@ def grafico_metastases(admissao):
 
 
 # ============================================================
-# CARREGAMENTO DO BANCO
+# CARREGAR DADOS DA API
 # ============================================================
 
-if not DATABASE_PATH:
+with st.spinner("Consultando dados do REDCap..."):
 
-    st.error(
-        "O caminho do banco de dados não foi configurado "
-        "em st.secrets['DATABASE']."
+    try:
+
+        database = carregar_dados_api(
+            REDCAP_API_URL,
+            REDCAP_API_TOKEN
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Erro ao carregar os dados do REDCap: {e}"
+        )
+
+        st.stop()
+
+
+# ============================================================
+# VERIFICAR DADOS
+# ============================================================
+
+if database.empty:
+
+    st.warning(
+        "A API do REDCap não retornou registros."
     )
 
     st.stop()
 
 
-try:
-
-    database = carregar_database(
-        DATABASE_PATH
-    )
-
-except Exception as e:
-
-    st.error(
-        f"Erro ao carregar o banco de dados: {e}"
-    )
-
-    st.stop()
-
-
 # ============================================================
-# PREPARAÇÃO
+# PREPARAÇÃO DOS DADOS
 # ============================================================
 
 database = renomear_colunas(database)
@@ -632,30 +748,22 @@ admissao = preparar_dados(database)
 
 
 # ============================================================
-# DATA DE ATUALIZAÇÃO
+# DATA DA CONSULTA À API
 # ============================================================
 
-ultima_atualizacao = obter_ultima_atualizacao(
-    CAMINHO_ATUALIZACAO
+ultima_atualizacao = datetime.now().strftime(
+    "%d/%m/%Y às %H:%M"
 )
 
-if ultima_atualizacao:
-
-    st.markdown(
-        f"""
-        <div class="atualizacao">
-            <b>Última atualização dos dados:</b>
-            {ultima_atualizacao}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-else:
-
-    st.info(
-        "Não foi possível identificar a data da última atualização."
-    )
+st.markdown(
+    f"""
+    <div class="atualizacao">
+        <b>Dados consultados no REDCap:</b>
+        {ultima_atualizacao}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
@@ -671,6 +779,11 @@ st.header("Dados de Admissão")
 
 total_pacientes = len(admissao)
 
+
+# ------------------------------------------------------------
+# Estágio IV
+# ------------------------------------------------------------
+
 total_estagio_iv = 0
 
 if "Estágio clínico" in admissao.columns:
@@ -682,9 +795,14 @@ if "Estágio clínico" in admissao.columns:
     )
 
 
+# ------------------------------------------------------------
+# Metástase
+# ------------------------------------------------------------
+
 total_metastase = 0
 
 colunas_metastases = [
+
     "M Fígado",
     "M Pulmão",
     "M SNC",
@@ -705,7 +823,9 @@ colunas_metastases_existentes = [
 if colunas_metastases_existentes:
 
     total_metastase = (
-        admissao[colunas_metastases_existentes]
+        admissao[
+            colunas_metastases_existentes
+        ]
         .sum(axis=1)
         .gt(0)
         .sum()
@@ -713,22 +833,26 @@ if colunas_metastases_existentes:
 
 
 # ============================================================
-# EXIBIÇÃO DOS KPIs
+# KPIs
 # ============================================================
 
 kpi1, kpi2, kpi3 = st.columns(3)
+
 
 with kpi1:
 
     st.markdown(
         f"""
         <div class="kpi">
+
             <div class="kpi-title">
                 Total de admissões
             </div>
+
             <div class="kpi-value">
                 {total_pacientes:,}
             </div>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -740,12 +864,15 @@ with kpi2:
     st.markdown(
         f"""
         <div class="kpi">
+
             <div class="kpi-title">
                 Estágio IV
             </div>
+
             <div class="kpi-value">
                 {total_estagio_iv:,}
             </div>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -757,19 +884,25 @@ with kpi3:
     st.markdown(
         f"""
         <div class="kpi">
+
             <div class="kpi-title">
                 Pacientes com metástase
             </div>
+
             <div class="kpi-value">
                 {total_metastase:,}
             </div>
+
         </div>
         """,
         unsafe_allow_html=True
     )
 
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown(
+    "<br>",
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
@@ -777,6 +910,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ============================================================
 
 col1, col2 = st.columns(2)
+
 
 with col1:
 
@@ -823,6 +957,7 @@ with col2:
 # ============================================================
 
 col3, col4 = st.columns(2)
+
 
 with col3:
 
@@ -873,3 +1008,4 @@ st.markdown("---")
 st.caption(
     "Desenvolvido por Tiago Henrique • HB Onco • 2026"
 )
+```

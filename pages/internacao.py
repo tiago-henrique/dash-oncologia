@@ -156,8 +156,8 @@ def carregar_dados_redcap():
 
     try:
 
-        api_url = st.secrets["REDCAP"]["API_URL"]
-        api_token = st.secrets["REDCAP"]["API_TOKEN"]
+        api_url = st.secrets["REDCAP_API_URL"]
+        api_token = st.secrets["REDCAP_API_TOKEN"]
 
     except Exception as e:
 

@@ -1,114 +1,102 @@
+```python
 import streamlit as st
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import plotly.express as px
+import os
+import datetime
 import requests
-from datetime import datetime
+import seaborn as sns
 
+st.set_page_config(layout='wide')
 
-# ============================================================
-# CONFIGURAÇÃO DA PÁGINA
-# ============================================================
-
-st.set_page_config(
-    page_title="Dashboard HB Onco",
-    page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-
-# ============================================================
-# CSS
-# ============================================================
-
-st.markdown(
-    """
+st.markdown("""
     <style>
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-    /* Oculta navegação padrão do Streamlit */
-    [data-testid="stSidebarNav"] {
-        display: none;
+st.markdown("""
+<style>
+    header{
+        width{
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
     }
-
-    /* Reduz espaço superior */
-    .block-container {
-        padding-top: 1rem;
-    }
-
-    /* Cabeçalho */
-    .header {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        margin-bottom: 20px;
-    }
-
-    .logo-container {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-    }
-
-    .logo-container img {
-        width: 90px;
-        max-width: 90px;
-        height: auto;
-    }
-
-    .titulo {
-        background-color: #004170;
-        color: white;
-        font-size: 32px;
+    .titulo{
+        background-color: #004170;  
+        color: #FFF;
+        font-size: 54px;
         font-weight: bold;
         width: 100%;
-        padding: 12px 18px;
+        margin-bottom: 10px;
         text-align: center;
-        border-radius: 8px;
     }
-
-    /* Cards KPI */
-    .kpi {
+    .total-internacao{
+        border-radius: 5px;
         background-color: #004170;
-        color: white;
-        padding: 18px;
-        border-radius: 10px;
+        margin-top: 10px;
+        width: 15%;
         text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-
-    .kpi-title {
-        font-size: 15px;
-        font-weight: 500;
-        margin-bottom: 8px;
-    }
-
-    .kpi-value {
-        font-size: 30px;
+    .total-internacao p{
         font-weight: bold;
-    }
-
-    /* Informação de atualização */
-    .atualizacao {
-        background-color: #f2f6fa;
-        color: #004170;
-        padding: 10px 15px;
-        border-radius: 6px;
-        margin-bottom: 20px;
+        padding: 1rem;
+        color: #FFF;
         font-size: 14px;
     }
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    div.stPageLink a {
+        background-color: #fff;
+        color: white;
+        padding: 5px;
+        border-radius: 5px;
+        text-decoration: none;
+        border: 0px solid #d3d3d3;
+        transition: all 0.3s ease;
+    }
+    
+    div.stPageLink a:hover {
+        background-color: #fff;
+        color: white;
+        border-color: #fff;
+    }
+            
+    .media_dias{
+        display: gird;
+        background-color: #FFF;
+        border-radius: 5px;
+        border-bottom: 10px;
+        color: #336799;
+        padding: 0.2rem;
+    }
+
+    .content{
+        grid-tempplate-columns: 1fr 1fr;        
+    }
+
+    .media_dias h1{
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .media_dias p{
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 
 # ============================================================
-# SIDEBAR
+# MENU
 # ============================================================
 
 st.sidebar.title("Menu")
-
 st.sidebar.page_link(
     "pages/internacao.py",
     label="Dados das Internações"
@@ -116,894 +104,373 @@ st.sidebar.page_link(
 
 
 # ============================================================
-# CONFIGURAÇÕES
+# TÍTULO
 # ============================================================
 
-REDCAP_API_URL = st.secrets.get("REDCAP_API_URL", "")
-REDCAP_API_TOKEN = st.secrets.get("REDCAP_API_TOKEN", "")
-
-# Caminho do logotipo
-LOGO_PATH = "imagem/logo-hbonco.webp"
-
-
-# ============================================================
-# CABEÇALHO
-# ============================================================
-
-col_logo, col_titulo = st.columns([1, 7])
-
-with col_logo:
-
-    try:
-
-        st.image(
-            LOGO_PATH,
-            width=90
-        )
-
-    except Exception:
-
-        st.warning("Logo não encontrada.")
-
-
-with col_titulo:
-
-    st.markdown(
-        """
-        <div class="titulo">
-            Dashboard HB Onco
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+st.markdown(
+    f"<div class='titulo'>Dashboard HB Onco</div>",
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
-# VALIDAÇÃO DA API
+# LOGO
 # ============================================================
 
-if not REDCAP_API_URL:
-
-    st.error(
-        "A variável REDCAP_API_URL não foi configurada "
-        "em st.secrets."
-    )
-
-    st.stop()
-
-
-if not REDCAP_API_TOKEN:
-
-    st.error(
-        "A variável REDCAP_API_TOKEN não foi configurada "
-        "em st.secrets."
-    )
-
-    st.stop()
+st.image("imagem/logo-hbonco.webp")
 
 
 # ============================================================
-# FUNÇÃO — CONSULTAR API DO REDCAP
+# OBTENÇÃO DOS DADOS - API REDCAP
 # ============================================================
 
 @st.cache_data(ttl=300)
-def carregar_dados_api(url, token):
-    """
-    Consulta diretamente a API do REDCap e retorna
-    os registros como DataFrame.
+def carregar_dados_redcap():
 
-    Os dados são obtidos em formato JSON.
-    Não utiliza CSV nem arquivo intermediário.
-    """
+    api_url = st.secrets["REDCAP_API_URL"]
+    api_token = st.secrets["REDCAP_API_TOKEN"]
 
     payload = {
-        "token": token,
+        "token": api_token,
         "content": "record",
         "action": "export",
-        "format": "json",
+        "format": "csv",
         "type": "flat",
         "rawOrLabel": "raw",
         "rawOrLabelHeaders": "raw",
         "exportCheckboxLabel": "false",
         "exportSurveyFields": "false",
-        "exportDataAccessGroups": "false"
+        "exportDataAccessGroups": "false",
+        "returnFormat": "csv"
     }
 
-    try:
+    response = requests.post(
+        api_url,
+        data=payload,
+        timeout=60
+    )
 
-        response = requests.post(
-            url,
-            data=payload,
-            timeout=60
-        )
+    response.raise_for_status()
 
-        response.raise_for_status()
+    if not response.text.strip():
+        raise ValueError("A API do REDCap retornou dados vazios.")
 
-    except requests.RequestException as e:
-
-        raise RuntimeError(
-            f"Erro na comunicação com a API do REDCap: {e}"
-        )
-
-
-    # --------------------------------------------------------
-    # Verifica resposta
-    # --------------------------------------------------------
-
-    try:
-
-        dados = response.json()
-
-    except ValueError:
-
-        raise RuntimeError(
-            "A API do REDCap não retornou um JSON válido."
-        )
-
-
-    # --------------------------------------------------------
-    # Nenhum registro
-    # --------------------------------------------------------
-
-    if not dados:
-
-        return pd.DataFrame()
-
-
-    # --------------------------------------------------------
-    # JSON → DataFrame
-    # --------------------------------------------------------
-
-    database = pd.DataFrame(dados)
+    database = pd.read_csv(
+        pd.io.common.StringIO(response.text)
+    )
 
     return database
 
 
 # ============================================================
-# FUNÇÃO — RENOMEAR VARIÁVEIS
+# CARREGAR BANCO
 # ============================================================
 
-def renomear_colunas(database):
+try:
 
-    mapa_colunas = {
+    database = carregar_dados_redcap()
 
-        # ----------------------------------------------------
-        # Sítio primário
-        # ----------------------------------------------------
-
-        "sitio_primario___1": "Mama",
-        "sitio_primario___2": "Pulmão",
-        "sitio_primario___3": "C&P",
-        "sitio_primario___4": "SNC",
-        "sitio_primario___5": "Ovário",
-        "sitio_primario___6": "Próstata",
-        "sitio_primario___8": "Esôfago",
-        "sitio_primario___9": "Via Biliar",
-        "sitio_primario___10": "Pênis",
-        "sitio_primario___11": "Gástrico",
-        "sitio_primario___12": "Pâncreas",
-        "sitio_primario___13": "Colorretal",
-        "sitio_primario___14": "Colo Útero",
-        "sitio_primario___15": "Endométrio",
-        "sitio_primario___16": "Fígado",
-        "sitio_primario___17": "Pele",
-        "sitio_primario___18": "Bexiga",
-        "sitio_primario___19": "Rim",
-        "sitio_primario___20": "Outro",
-        "sitio_primario___21": "Sarcomas",
-
-        # ----------------------------------------------------
-        # Outros
-        # ----------------------------------------------------
-
-        "outro_sitio_primario": "Outro sítio primário",
-
-        # ----------------------------------------------------
-        # Estágio
-        # ----------------------------------------------------
-
-        "estagio_clinico": "Estágio clínico",
-
-        # ----------------------------------------------------
-        # Metástases
-        # ----------------------------------------------------
-
-        "metastase___1": "M Fígado",
-        "metastase___2": "M Pulmão",
-        "metastase___3": "M SNC",
-        "metastase___4": "M Peritônio",
-        "metastase___5": "M Osso",
-        "metastase___6": "M Linfonodos",
-        "metastase___7": "M Adrenal",
-        "metastase___8": "M Outro",
-        "metastase___9": "Não se aplica",
-        "metastase___10": "M Pleura",
-        "metastase___11":
-            "Progressão locoregional - em cenário paliativo"
-    }
-
-    return database.rename(columns=mapa_colunas)
-
-
-# ============================================================
-# FUNÇÃO — PREPARAR DADOS
-# ============================================================
-
-def preparar_dados(database):
-
-    database = database.copy()
-
-    # --------------------------------------------------------
-    # Identificação dos registros de admissão
-    # --------------------------------------------------------
-
-    if "redcap_repeat_instrument" in database.columns:
-
-        admissao = database[
-            database["redcap_repeat_instrument"].isna()
-        ].copy()
-
-    else:
-
-        admissao = database.copy()
-
-
-    # --------------------------------------------------------
-    # Converter campos binários para numérico
-    # --------------------------------------------------------
-
-    colunas_binarias = [
-
-        "Mama",
-        "Pulmão",
-        "C&P",
-        "SNC",
-        "Ovário",
-        "Próstata",
-        "Esôfago",
-        "Via Biliar",
-        "Gástrico",
-        "Pâncreas",
-        "Colorretal",
-        "Colo Útero",
-        "Endométrio",
-        "Fígado",
-        "Pele",
-        "Bexiga",
-        "Rim",
-        "Outro",
-        "Sarcomas",
-
-        "M Fígado",
-        "M Pulmão",
-        "M SNC",
-        "M Peritônio",
-        "M Osso",
-        "M Linfonodos",
-        "M Adrenal",
-        "M Outro",
-        "Não se aplica",
-        "M Pleura"
-    ]
-
-
-    for coluna in colunas_binarias:
-
-        if coluna in admissao.columns:
-
-            admissao[coluna] = (
-                pd.to_numeric(
-                    admissao[coluna],
-                    errors="coerce"
-                )
-                .fillna(0)
-            )
-
-
-    # --------------------------------------------------------
-    # Estágio clínico
-    # --------------------------------------------------------
-
-    if "Estágio clínico" in admissao.columns:
-
-        mapa_estagio = {
-
-            1: "Estágio I",
-            2: "Estágio II",
-            3: "Estágio III",
-            4: "Estágio IV",
-            5: "NA"
-        }
-
-        admissao["Estágio clínico"] = (
-            pd.to_numeric(
-                admissao["Estágio clínico"],
-                errors="coerce"
-            )
-            .map(mapa_estagio)
-        )
-
-
-    return admissao
-
-
-# ============================================================
-# GRÁFICO — SÍTIO PRIMÁRIO
-# ============================================================
-
-def grafico_sitio_primario(admissao):
-
-    colunas = [
-
-        "Mama",
-        "Pulmão",
-        "C&P",
-        "SNC",
-        "Ovário",
-        "Próstata",
-        "Esôfago",
-        "Via Biliar",
-        "Gástrico",
-        "Pâncreas",
-        "Colorretal",
-        "Colo Útero",
-        "Endométrio",
-        "Fígado",
-        "Pele",
-        "Bexiga",
-        "Rim",
-        "Outro",
-        "Sarcomas"
-    ]
-
-    colunas_existentes = [
-        coluna
-        for coluna in colunas
-        if coluna in admissao.columns
-    ]
-
-    if not colunas_existentes:
-        return None
-
-    dados = (
-        admissao[colunas_existentes]
-        .sum()
-        .reset_index()
+    data_atualizacao = datetime.datetime.now().strftime(
+        "%d/%m/%Y às %H:%M:%S"
     )
 
-    dados.columns = [
-        "Tipo",
-        "Total"
-    ]
-
-    dados = dados.sort_values(
-        "Total",
-        ascending=False
+    st.success(
+        f"Os dados do dashboard foram obtidos da API do REDCap em: "
+        f"{data_atualizacao}"
     )
 
-    fig = px.bar(
-        dados,
-        x="Tipo",
-        y="Total",
-        text="Total",
-        title="Casos por Tipo de Câncer"
+except requests.exceptions.RequestException as e:
+
+    st.error(
+        f"Erro de comunicação com a API do REDCap: {e}"
     )
 
-    fig.update_traces(
-        textposition="outside"
-    )
+    st.stop()
 
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Número de casos",
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20
-        )
-    )
+except Exception as e:
 
-    return fig
-
-
-# ============================================================
-# GRÁFICO — OUTROS SÍTIOS
-# ============================================================
-
-def grafico_outros_sitios(admissao):
-
-    coluna = "Outro sítio primário"
-
-    if coluna not in admissao.columns:
-        return None
-
-    dados = (
-        admissao[coluna]
-        .dropna()
-        .astype(str)
-        .str.strip()
-    )
-
-    dados = dados[dados != ""]
-
-    if dados.empty:
-        return None
-
-    dados = (
-        dados
-        .value_counts()
-        .reset_index()
-    )
-
-    dados.columns = [
-        "Sítio",
-        "Quantidade"
-    ]
-
-    fig = px.bar(
-        dados,
-        x="Sítio",
-        y="Quantidade",
-        text="Quantidade",
-        title="Outros Sítios Primários"
-    )
-
-    fig.update_traces(
-        textposition="outside"
-    )
-
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Quantidade",
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20
-        )
-    )
-
-    return fig
-
-
-# ============================================================
-# GRÁFICO — ESTÁGIO CLÍNICO
-# ============================================================
-
-def grafico_estagio(admissao):
-
-    coluna = "Estágio clínico"
-
-    if coluna not in admissao.columns:
-        return None
-
-    dados = (
-        admissao[coluna]
-        .dropna()
-        .value_counts()
-        .reset_index()
-    )
-
-    dados.columns = [
-        "Estágio",
-        "Quantidade"
-    ]
-
-    ordem = [
-        "Estágio I",
-        "Estágio II",
-        "Estágio III",
-        "Estágio IV",
-        "NA"
-    ]
-
-    dados["Estágio"] = pd.Categorical(
-        dados["Estágio"],
-        categories=ordem,
-        ordered=True
-    )
-
-    dados = dados.sort_values("Estágio")
-
-    fig = px.bar(
-        dados,
-        x="Estágio",
-        y="Quantidade",
-        text="Quantidade",
-        title="Estágio Clínico"
-    )
-
-    fig.update_traces(
-        textposition="outside"
-    )
-
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Quantidade",
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20
-        )
-    )
-
-    return fig
-
-
-# ============================================================
-# GRÁFICO — METÁSTASES
-# ============================================================
-
-def grafico_metastases(admissao):
-
-    colunas = [
-
-        "M Fígado",
-        "M Pulmão",
-        "M SNC",
-        "M Peritônio",
-        "M Osso",
-        "M Linfonodos",
-        "M Adrenal",
-        "M Outro",
-        "M Pleura"
-    ]
-
-    colunas_existentes = [
-        coluna
-        for coluna in colunas
-        if coluna in admissao.columns
-    ]
-
-    if not colunas_existentes:
-        return None
-
-    dados = (
-        admissao[colunas_existentes]
-        .sum()
-        .reset_index()
-    )
-
-    dados.columns = [
-        "Tipo",
-        "Total"
-    ]
-
-    dados = dados.sort_values(
-        "Total",
-        ascending=False
-    )
-
-    fig = px.bar(
-        dados,
-        x="Tipo",
-        y="Total",
-        text="Total",
-        title="Metástase por Subsítios"
-    )
-
-    fig.update_traces(
-        textposition="outside"
-    )
-
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Número de casos",
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20
-        )
-    )
-
-    return fig
-
-
-# ============================================================
-# CARREGAR DADOS DA API
-# ============================================================
-
-with st.spinner("Consultando dados do REDCap..."):
-
-    try:
-
-        database = carregar_dados_api(
-            REDCAP_API_URL,
-            REDCAP_API_TOKEN
-        )
-
-    except Exception as e:
-
-        st.error(
-            f"Erro ao carregar os dados do REDCap: {e}"
-        )
-
-        st.stop()
-
-
-# ============================================================
-# VERIFICAR DADOS
-# ============================================================
-
-if database.empty:
-
-    st.warning(
-        "A API do REDCap não retornou registros."
+    st.error(
+        f"Erro ao carregar os dados do REDCap: {e}"
     )
 
     st.stop()
 
 
 # ============================================================
-# PREPARAÇÃO DOS DADOS
+# RENOMEAR COLUNAS
 # ============================================================
 
-database = renomear_colunas(database)
-
-admissao = preparar_dados(database)
+database = database.rename(columns={
+    'sitio_primario___1': 'Mama',
+    'sitio_primario___2': 'Pulmão',
+    'sitio_primario___3': 'C&P',
+    'sitio_primario___4': 'SNC',
+    'sitio_primario___5': 'Ovário',
+    'sitio_primario___6': 'Próstata',
+    'sitio_primario___8': 'Esôfago',
+    'sitio_primario___9': 'Via Biliar',
+    'sitio_primario___10': 'Pênis',
+    'sitio_primario___11': 'Gástrico',
+    'sitio_primario___12': 'Pâncreas',
+    'sitio_primario___13': 'Colorretal',
+    'sitio_primario___14': 'Colo Útero',
+    'sitio_primario___15': 'Endométrio',
+    'sitio_primario___16': 'Fígado',
+    'sitio_primario___17': 'Pele',
+    'sitio_primario___18': 'Bexiga',
+    'sitio_primario___19': 'Rim',
+    'sitio_primario___20': 'Outro',
+    'sitio_primario___21': 'Sarcomas',
+    'outro_sitio_primario': 'Outro sítio primário',
+    'estagio_clinico': 'Estágio clínico',
+    'metastase___1': 'M Fígado',
+    'metastase___2': 'M Pulmão',
+    'metastase___3': 'M SNC',
+    'metastase___4': 'M Peritônio',
+    'metastase___5': 'M Osso',
+    'metastase___6': 'M Linfonodos',
+    'metastase___7': 'M Adrenal',
+    'metastase___8': 'M Outro',
+    'metastase___9': 'Não se aplica',
+    'metastase___10': 'M Pleura',
+    'metastase___11': 'Progressão locoregional - em cenário paliativo'
+})
 
 
 # ============================================================
-# DATA DA CONSULTA À API
+# FILTRAR ADMISSÃO
 # ============================================================
 
-ultima_atualizacao = datetime.now().strftime(
-    "%d/%m/%Y às %H:%M"
-)
-
-st.markdown(
-    f"""
-    <div class="atualizacao">
-        <b>Dados consultados no REDCap:</b>
-        {ultima_atualizacao}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# CABEÇALHO
-# ============================================================
-
-st.header("Dados de Admissão")
-
-
-# ============================================================
-# KPIs
-# ============================================================
-
-total_pacientes = len(admissao)
-
-
-# ------------------------------------------------------------
-# Estágio IV
-# ------------------------------------------------------------
-
-total_estagio_iv = 0
-
-if "Estágio clínico" in admissao.columns:
-
-    total_estagio_iv = (
-        admissao["Estágio clínico"]
-        .eq("Estágio IV")
-        .sum()
-    )
-
-
-# ------------------------------------------------------------
-# Metástase
-# ------------------------------------------------------------
-
-total_metastase = 0
-
-colunas_metastases = [
-
-    "M Fígado",
-    "M Pulmão",
-    "M SNC",
-    "M Peritônio",
-    "M Osso",
-    "M Linfonodos",
-    "M Adrenal",
-    "M Outro",
-    "M Pleura"
+admissao = database[
+    database['redcap_repeat_instrument'].isna()
 ]
 
-colunas_metastases_existentes = [
-    coluna
-    for coluna in colunas_metastases
-    if coluna in admissao.columns
+st.header('Dados Admissão')
+
+
+# ============================================================
+# TIPOS DE CÂNCER
+# ============================================================
+
+colunas_sp = [
+    'Mama',
+    'Pulmão',
+    'C&P',
+    'SNC',
+    'Ovário',
+    'Próstata',
+    'Esôfago',
+    'Via Biliar',
+    'Gástrico',
+    'Pâncreas',
+    'Colorretal',
+    'Colo Útero',
+    'Endométrio',
+    'Fígado',
+    'Pele',
+    'Bexiga',
+    'Rim',
+    'Outro',
+    'Sarcomas'
 ]
 
-if colunas_metastases_existentes:
 
-    total_metastase = (
-        admissao[
-            colunas_metastases_existentes
-        ]
-        .sum(axis=1)
-        .gt(0)
-        .sum()
-    )
+dados_sp = admissao[colunas_sp].sum().reset_index()
 
+dados_sp.columns = [
+    'Tipo',
+    'Total'
+]
 
-# ============================================================
-# KPIs
-# ============================================================
-
-kpi1, kpi2, kpi3 = st.columns(3)
-
-
-with kpi1:
-
-    st.markdown(
-        f"""
-        <div class="kpi">
-
-            <div class="kpi-title">
-                Total de admissões
-            </div>
-
-            <div class="kpi-value">
-                {total_pacientes:,}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with kpi2:
-
-    st.markdown(
-        f"""
-        <div class="kpi">
-
-            <div class="kpi-title">
-                Estágio IV
-            </div>
-
-            <div class="kpi-value">
-                {total_estagio_iv:,}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with kpi3:
-
-    st.markdown(
-        f"""
-        <div class="kpi">
-
-            <div class="kpi-title">
-                Pacientes com metástase
-            </div>
-
-            <div class="kpi-value">
-                {total_metastase:,}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-st.markdown(
-    "<br>",
-    unsafe_allow_html=True
+dados_sp = dados_sp.sort_values(
+    by='Total',
+    ascending=False
 )
 
 
-# ============================================================
-# GRÁFICOS — LINHA 1
-# ============================================================
+fig = px.bar(
+    dados_sp,
+    x='Tipo',
+    y='Total',
+    text='Total',
+    title='Casos por Tipo de Câncer'
+)
 
-col1, col2 = st.columns(2)
+fig.update_traces(
+    textposition='outside'
+)
+
+
+col1, col2 = st.columns(
+    2,
+    border=True
+)
 
 
 with col1:
 
-    fig = grafico_sitio_primario(
-        admissao
+    st.plotly_chart(
+        fig,
+        use_container_width=True
     )
 
-    if fig:
 
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
+# ============================================================
+# OUTROS SÍTIOS PRIMÁRIOS
+# ============================================================
 
-    else:
+outro_sp = database[
+    'Outro sítio primário'
+].value_counts()
 
-        st.warning(
-            "Dados de sítio primário não disponíveis."
-        )
+osp = outro_sp.reset_index()
+
+osp.columns = [
+    'Sítio',
+    'Quantidade'
+]
+
+
+fig_osp = px.bar(
+    osp,
+    x='Sítio',
+    y='Quantidade',
+    text='Quantidade',
+    title='Outros Sítios Primários'
+)
+
+fig_osp.update_traces(
+    textposition='inside'
+)
 
 
 with col2:
 
-    fig = grafico_outros_sitios(
-        admissao
+    st.plotly_chart(
+        fig_osp,
+        use_container_width=True
     )
 
-    if fig:
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-    else:
-
-        st.info(
-            "Não existem dados de outros sítios primários."
-        )
-
 
 # ============================================================
-# GRÁFICOS — LINHA 2
+# ESTÁGIO CLÍNICO
 # ============================================================
 
-col3, col4 = st.columns(2)
+estagio_map = {
+    1: 'Estágio I',
+    2: 'Estágio II',
+    3: 'Estágio III',
+    4: 'Estágio IV',
+    5: 'NA'
+}
+
+
+database['Estágio clínico'] = database[
+    'Estágio clínico'
+].map(estagio_map)
+
+
+estagio_clinico = database[
+    'Estágio clínico'
+].value_counts()
+
+
+ec = estagio_clinico.reset_index()
+
+ec.columns = [
+    'Estágio',
+    'Quantidade'
+]
+
+
+fig_estagio = px.bar(
+    ec,
+    x='Estágio',
+    y='Quantidade',
+    text='Quantidade',
+    title='Estágio Clínico'
+)
+
+fig_estagio.update_traces(
+    textposition='outside'
+)
+
+
+col3, col4 = st.columns(
+    2,
+    border=True
+)
 
 
 with col3:
 
-    fig = grafico_estagio(
-        admissao
+    st.plotly_chart(
+        fig_estagio,
+        use_container_width=True
     )
 
-    if fig:
 
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
+# ============================================================
+# METÁSTASES
+# ============================================================
 
-    else:
+colunas_metastases = [
+    'M Fígado',
+    'M Pulmão',
+    'M SNC',
+    'M Peritônio',
+    'M Osso',
+    'M Linfonodos',
+    'M Adrenal',
+    'M Outro',
+    'Não se aplica',
+    'M Pleura'
+]
 
-        st.warning(
-            "Dados de estágio clínico não disponíveis."
-        )
+
+dados_mt = admissao[
+    colunas_metastases
+].sum().reset_index()
+
+
+dados_mt.columns = [
+    'Tipo',
+    'Total'
+]
+
+
+dados_mt = dados_mt.sort_values(
+    by='Total',
+    ascending=False
+)
+
+
+fig_metastase = px.bar(
+    dados_mt,
+    x="Tipo",
+    y="Total",
+    text="Total",
+    title="Metástase por Subsítios"
+)
+
+fig_metastase.update_traces(
+    textposition='outside'
+)
 
 
 with col4:
 
-    fig = grafico_metastases(
-        admissao
+    st.plotly_chart(
+        fig_metastase,
+        use_container_width=True
     )
 
-    if fig:
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-    else:
-
-        st.warning(
-            "Dados de metástases não disponíveis."
-        )
-
 
 # ============================================================
-# RODAPÉ
+# FOOTER
 # ============================================================
 
-st.markdown("---")
-
-st.caption(
-    "Desenvolvido por Tiago Henrique • HB Onco • 2026"
+st.write(
+    "Desenvolvido por Tiago Henrique - 2026"
 )
+```

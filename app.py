@@ -1,4 +1,4 @@
-```python
+
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -473,4 +473,3 @@ with col4:
 st.write(
     "Desenvolvido por Tiago Henrique - 2026"
 )
-```

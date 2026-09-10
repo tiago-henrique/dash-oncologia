@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -10,7 +9,6 @@ import requests
 import seaborn as sns
 
 st.set_page_config(layout='wide')
-
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {
@@ -91,38 +89,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
-# MENU
-# ============================================================
-
 st.sidebar.title("Menu")
 st.sidebar.page_link(
     "pages/internacao.py",
     label="Dados das Internações"
 )
 
-
-# ============================================================
-# TÍTULO
-# ============================================================
-
 st.markdown(
     f"<div class='titulo'>Dashboard HB Onco</div>",
     unsafe_allow_html=True
 )
 
-
-# ============================================================
-# LOGO
-# ============================================================
-
 st.image("imagem/logo-hbonco.webp")
-
-
-# ============================================================
-# OBTENÇÃO DOS DADOS - API REDCAP
-# ============================================================
 
 @st.cache_data(ttl=300)
 def carregar_dados_redcap():
@@ -161,15 +139,8 @@ def carregar_dados_redcap():
 
     return database
 
-
-# ============================================================
-# CARREGAR BANCO
-# ============================================================
-
 try:
-
     database = carregar_dados_redcap()
-
     data_atualizacao = datetime.datetime.now().strftime(
         "%d/%m/%Y às %H:%M:%S"
     )
@@ -195,10 +166,6 @@ except Exception as e:
 
     st.stop()
 
-
-# ============================================================
-# RENOMEAR COLUNAS
-# ============================================================
 
 database = database.rename(columns={
     'sitio_primario___1': 'Mama',
@@ -237,20 +204,11 @@ database = database.rename(columns={
 })
 
 
-# ============================================================
-# FILTRAR ADMISSÃO
-# ============================================================
-
 admissao = database[
     database['redcap_repeat_instrument'].isna()
 ]
 
 st.header('Dados Admissão')
-
-
-# ============================================================
-# TIPOS DE CÂNCER
-# ============================================================
 
 colunas_sp = [
     'Mama',
@@ -314,11 +272,6 @@ with col1:
         use_container_width=True
     )
 
-
-# ============================================================
-# OUTROS SÍTIOS PRIMÁRIOS
-# ============================================================
-
 outro_sp = database[
     'Outro sítio primário'
 ].value_counts()
@@ -351,11 +304,6 @@ with col2:
         use_container_width=True
     )
 
-
-# ============================================================
-# ESTÁGIO CLÍNICO
-# ============================================================
-
 estagio_map = {
     1: 'Estágio I',
     2: 'Estágio II',
@@ -364,16 +312,13 @@ estagio_map = {
     5: 'NA'
 }
 
-
 database['Estágio clínico'] = database[
     'Estágio clínico'
 ].map(estagio_map)
 
-
 estagio_clinico = database[
     'Estágio clínico'
 ].value_counts()
-
 
 ec = estagio_clinico.reset_index()
 
@@ -403,16 +348,10 @@ col3, col4 = st.columns(
 
 
 with col3:
-
     st.plotly_chart(
         fig_estagio,
         use_container_width=True
     )
-
-
-# ============================================================
-# METÁSTASES
-# ============================================================
 
 colunas_metastases = [
     'M Fígado',
@@ -427,23 +366,19 @@ colunas_metastases = [
     'M Pleura'
 ]
 
-
 dados_mt = admissao[
     colunas_metastases
 ].sum().reset_index()
-
 
 dados_mt.columns = [
     'Tipo',
     'Total'
 ]
 
-
 dados_mt = dados_mt.sort_values(
     by='Total',
     ascending=False
 )
-
 
 fig_metastase = px.bar(
     dados_mt,
@@ -464,11 +399,6 @@ with col4:
         fig_metastase,
         use_container_width=True
     )
-
-
-# ============================================================
-# FOOTER
-# ============================================================
 
 st.write(
     "Desenvolvido por Tiago Henrique - 2026"
